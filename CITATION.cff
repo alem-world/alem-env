@@ -1,0 +1,64 @@
+cff-version: 1.2.0
+message: "If you use Alem in your research, please cite the paper below."
+title: "Benchmarking Open-Ended Multi-Agent Coordination in Language Agents"
+authors:
+  - family-names: Tessera
+    given-names: Kale-ab Abebe
+  - family-names: Szecsenyi
+    given-names: Andras
+  - family-names: Barker
+    given-names: Cameron
+  - family-names: Rutherford
+    given-names: Alexander
+  - family-names: Paglieri
+    given-names: Davide
+  - family-names: Scannell
+    given-names: Aidan
+  - family-names: Gouk
+    given-names: Henry
+  - family-names: Crowley
+    given-names: Elliot J.
+  - family-names: Rocktäschel
+    given-names: Tim
+  - family-names: Storkey
+    given-names: Amos
+version: 0.1.0
+date-released: 2026-06-17
+license: MIT
+repository-code: "https://github.com/alem-world/alem-env"
+url: "https://arxiv.org/abs/2606.08340"
+keywords:
+  - reinforcement-learning
+  - multi-agent
+  - jax
+  - llm-agents
+  - benchmark
+preferred-citation:
+  type: article
+  title: "Benchmarking Open-Ended Multi-Agent Coordination in Language Agents"
+  authors:
+    - family-names: Tessera
+      given-names: Kale-ab Abebe
+    - family-names: Szecsenyi
+      given-names: Andras
+    - family-names: Barker
+      given-names: Cameron
+    - family-names: Rutherford
+      given-names: Alexander
+    - family-names: Paglieri
+      given-names: Davide
+    - family-names: Scannell
+      given-names: Aidan
+    - family-names: Gouk
+      given-names: Henry
+    - family-names: Crowley
+      given-names: Elliot J.
+    - family-names: Rocktäschel
+      given-names: Tim
+    - family-names: Storkey
+      given-names: Amos
+  year: 2026
+  url: "https://arxiv.org/abs/2606.08340"
+  identifiers:
+    - type: url
+      value: "https://doi.org/10.48550/arXiv.2606.08340"

@@ -1,0 +1,25 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Alem mark</title>
+  <desc id="desc">Forager, miner, and warrior agents connected through one shared coordination point.</desc>
+  <style>
+    .ink-fill { fill: #1E2528; }
+    .ink-stroke { stroke: #1E2528; }
+    .sprite { image-rendering: pixelated; }
+    @media (prefers-color-scheme: dark) { .ink-fill { fill: #F4F7F2; } .ink-stroke { stroke: #F4F7F2; } }
+  </style>
+  <g transform="translate(128 128) scale(1.25) translate(-128 -128)" aria-label="forager, miner, and warrior coordinating">
+    <circle class="ink-stroke" cx="128" cy="128" r="78" stroke-width="7" opacity="0.18"/>
+    <path class="ink-stroke" d="M80 158L128 128M128 70L128 128M176 158L128 128" stroke-width="8" stroke-linecap="round" opacity="0.72"/>
+    <circle class="ink-fill" cx="128" cy="128" r="13">
+    </circle>
+    <circle cx="80" cy="158" r="34" fill="#34A853" opacity="0.12">
+    </circle>
+    <image class="sprite" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAABfSURBVDhPYxjG4Moinv/IGCpMHEDXDMNQafwAm0ZkDFWGG2DThIyhyjBBB4Pof1IwVBsEYFNADAZrxuZMUjDYEBior68nGEh41VBsAAjgU0CMBWAAUogNQ6UHFWBgAACRkLDTcmYBIQAAAABJRU5ErkJggg==" x="53.0" y="131.0" width="54.0" height="54.0"/>
+    <circle cx="128" cy="70" r="34" fill="#2F80ED" opacity="0.12">
+    </circle>
+    <image class="sprite" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACQSURBVDhPYxj6gBFKw8H/xYr/oUyGhjtxEFplEZgGAcbY+yh6mKA0GCBrxgXQ1cANIEYzDCCrBRtAimYYgOlB8QI5ABwg2FzgtkgFyoKAXXF3oCwEAAUoXhfsWrsbjPEBsAGw6CIFwPTAvYBuyLFjx6AsCLCysoKyIACUNkBeYCQnBpAB4/F6KYoMGGjAwAAAC681dxMCX+wAAAAASUVORK5CYII=" x="101.0" y="43.0" width="54.0" height="54.0"/>
+    <circle cx="176" cy="158" r="34" fill="#F2994A" opacity="0.12">
+    </circle>
+    <image class="sprite" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADISURBVDhPpZPhDQIhDIWLcQXXYI4bgJ8M4ggOwk8GYA7WcAj09eilNHBG/ZKmwmtfQdHRmvagG3+40xNpWnvp+WesQVNhmWraoMUYqZTCYZH9rh0mci9uRmi2beOsDb33VGsVzcFg2nyGNrn2PUYmAnuNlXYYoCCE0Ff7WgrPtOXPiAYU2mbL3+/guAKOhGlAJtrJOWfO+jsYTgABIYUa7ImugYFLKRHiG/pph/8H3kN7T9BPdghoSp/CJsj7cuBjs7A06KEgegERcHZxztfh2gAAAABJRU5ErkJggg==" x="149.0" y="131.0" width="54.0" height="54.0"/>
+  </g>
+</svg>

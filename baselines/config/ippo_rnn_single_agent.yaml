@@ -1,0 +1,65 @@
+# Single-agent IPPO baseline — coordination and multi-agent features disabled.
+# @package _global_
+# Weights & Biases configuration
+WANDB_MODE: "offline"
+ENTITY: ""
+PROJECT: ""
+RUN_NAME: "IPPO - Single Agent"
+
+# Environment configuration
+ENV_NAME: "Alem-Coop-Symbolic"
+
+SHARED_REWARD: false
+
+# Soft specialization on with efficiency=1.0 for both roles — effectively disables all
+# role gating. Needed because world_gen always assigns WARRIOR when player_count=1,
+# which would hard-block mining and foraging under soft_specialization=false.
+SOFT_SPECIALIZATION: true
+SPECIALIST_EFFICIENCY: 1.0
+NON_SPECIALIST_EFFICIENCY: 1.0
+SCALE_BASE_DIFFICULTY: false
+
+# Single agent — no coordination
+NUM_AGENTS: 1
+TRAINING_COORDINATION_DIFFICULTY: "none"
+
+# Communication — disabled
+NUM_COMM_CHANNELS: 0
+
+# Action masking
+ACTION_MASKING: true
+
+# Model parameters
+ALG_NAME: "ippo-rnn-single"
+GRU_HIDDEN_DIM: 512
+FC_DIM_SIZE: 128
+ACTIVATION: "tanh"
+
+# Training parameters
+TOTAL_TIMESTEPS: 1e9
+NUM_ENVS: 1024
+NUM_STEPS: 64
+NUM_MINIBATCHES: 8
+UPDATE_EPOCHS: 4
+GAE_LAMBDA: 0.8
+GAMMA: 0.99
+CLIP_EPS: 0.2
+SCALE_CLIP_EPS: false
+ENT_COEF: 0.01
+VF_COEF: 0.5
+ANNEAL_LR: true
+LR: 2e-4
+MAX_GRAD_NORM: 1.0
+LR_WARMUP: 0.0
+REW_SHAPING_HORIZON: 1e6
+
+# Seed configuration
+NUM_SEEDS: 1
+SEED: 0
+
+TEST_NUM_EPISODES: 20
+TEST_MAX_STEPS: 10000
+EVAL_DIFFICULTIES:
+  - none
+
+RUN_TAGS: []

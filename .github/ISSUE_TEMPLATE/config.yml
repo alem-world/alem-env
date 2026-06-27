@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Leaderboard submission
+    url: https://alem-world.github.io/leaderboard
+    about: To submit a result to the Alem leaderboard, follow the instructions there.
+  - name: Paper
+    url: https://arxiv.org/abs/2606.08340
+    about: Background, tasks, and methodology behind the benchmark.

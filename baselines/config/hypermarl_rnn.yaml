@@ -1,0 +1,73 @@
+# Weights & Biases configuration
+WANDB_MODE: "offline" # Change to "online" for logging and include appropriate ENTITY and PROJECT arguments
+ENTITY: ""
+PROJECT: ""
+RUN_NAME: "HYPERMARL-RNN - Base"
+
+# Environment configuration
+ENV_NAME: "Alem-Coop-Symbolic" # Can be changed to "Alem-Coop-Symbolic", "Alem-Coop-Pixels"
+
+SHARED_REWARD: false      # true=team reward, false=individual rewards
+
+# Soft Specialization (set SOFT_SPECIALIZATION=true to enable)
+# When false (default): hard gates - only specialists can perform role-specific actions
+# When true: soft gates - anyone can attempt, but specialists have higher success rate
+SOFT_SPECIALIZATION: true
+SPECIALIST_EFFICIENCY: 1.0      # Success rate for specialists (100%)
+# non specialist efficiency is sampled when TRAINING_COORDINATION_DIFFICULTY=sampled
+NON_SPECIALIST_EFFICIENCY: 0.2  # Success rate for non-specialists (20%)
+SCALE_BASE_DIFFICULTY: false  # whether to scale base difficulty with α (see alem_coop/alem_state.py for details)
+
+TRAINING_COORDINATION_DIFFICULTY: easy
+
+# Communication channels (MPE-style discrete messages)
+# 0 = disabled (no extra actions/obs), >0 = num one-hot comm dimensions per agent
+NUM_COMM_CHANNELS: 0
+
+# Action masking — when true, invalid actions are masked in the policy
+ACTION_MASKING: true
+
+# Model parameters
+ALG_NAME: "hypermarl-rnn"
+GRU_HIDDEN_DIM: 512
+FC_DIM_SIZE: 128
+ACTIVATION: "relu"
+
+# HyperMARL settings
+APPEND_AGENT_ID: true
+HYPERNET_EMBEDDING_DIM: 64
+HYPERNET_HIDDEN_DIMS: [64]
+HYPERNET_INIT_SCALE: 1.41421356237
+USE_AGENT_ID_EMBEDDINGS: true
+USE_BIAS_IN_HYPERNET: true
+
+# Training parameters
+TOTAL_TIMESTEPS: 1e9
+NUM_ENVS: 1024
+NUM_STEPS: 64
+NUM_MINIBATCHES: 8
+UPDATE_EPOCHS: 4
+GAE_LAMBDA: 0.8
+GAMMA: 0.99
+CLIP_EPS: 0.2
+SCALE_CLIP_EPS: false
+ENT_COEF: 0.01
+VF_COEF: 0.5
+ANNEAL_LR: true
+# found via sweep [0.004, 0.0001, 0.0003, 0.001 ]
+LR: 0.0001
+MAX_GRAD_NORM: 1.0
+LR_WARMUP: 0.0
+REW_SHAPING_HORIZON: 1e6
+
+# Seed configuration
+NUM_SEEDS: 1
+SEED: 0
+
+# Final evaluation — matches LLM eval (eval_alem.py: num_episodes=20, max_steps=10000)
+TEST_NUM_EPISODES: 20       # episodes per difficulty (sequential, one at a time)
+TEST_MAX_STEPS: 10000       # max steps per episode
+EVAL_DIFFICULTIES:
+  - easy
+
+RUN_TAGS: []

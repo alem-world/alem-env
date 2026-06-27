@@ -1,0 +1,49 @@
+<svg width="384" height="160" viewBox="16 0 384 160" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Animated Alem logo</title>
+  <desc id="desc">Alem wordmark with forager, miner, and warrior agents coordinating around a shared center.</desc>
+  <style>
+    .ink-fill { fill: #1E2528; }
+    .ink-stroke { stroke: #1E2528; }
+    .sprite { image-rendering: pixelated; }
+    @media (prefers-color-scheme: dark) { .ink-fill { fill: #F4F7F2; } .ink-stroke { stroke: #F4F7F2; } }
+  </style>
+  <g transform="translate(36 18)" aria-label="forager, miner, and warrior coordinating">
+    <circle class="ink-stroke" cx="66" cy="64" r="54" stroke-width="5" opacity="0.18"/>
+    <path class="ink-stroke" d="M28 92L66 64M66 22L66 64M104 92L66 64" stroke-width="5" stroke-linecap="round" opacity="0.72"/>
+    <path d="M28 92L66 64" stroke="#34A853" stroke-width="6" stroke-linecap="round" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.75;0.75;0" keyTimes="0;0.46;0.58;0.66;1" dur="3.0s" repeatCount="indefinite"/>
+    </path>
+    <path d="M66 22L66 64" stroke="#2F80ED" stroke-width="6" stroke-linecap="round" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.75;0.75;0" keyTimes="0;0.46;0.58;0.66;1" dur="3.0s" repeatCount="indefinite"/>
+    </path>
+    <path d="M104 92L66 64" stroke="#F2994A" stroke-width="6" stroke-linecap="round" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.75;0.75;0" keyTimes="0;0.46;0.58;0.66;1" dur="3.0s" repeatCount="indefinite"/>
+    </path>
+    <circle class="ink-stroke" cx="66" cy="64" r="22" stroke-width="2" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.30;0" keyTimes="0;0.52;0.62;1" dur="3.0s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="18;18;29;18" keyTimes="0;0.52;0.62;1" dur="3.0s" repeatCount="indefinite"/>
+    </circle>
+    <circle class="ink-fill" cx="66" cy="64" r="9">
+      <animate attributeName="r" values="9;9;12;9" keyTimes="0;0.52;0.62;1" dur="3.0s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="28" cy="92" r="24" fill="#34A853" opacity="0.12">
+      <animate attributeName="opacity" values="0.10;0.22;0.10" dur="3.0s" begin="0.00s" repeatCount="indefinite"/>
+    </circle>
+    <image class="sprite" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAABfSURBVDhPYxjG4Moinv/IGCpMHEDXDMNQafwAm0ZkDFWGG2DThIyhyjBBB4Pof1IwVBsEYFNADAZrxuZMUjDYEBior68nGEh41VBsAAjgU0CMBWAAUogNQ6UHFWBgAACRkLDTcmYBIQAAAABJRU5ErkJggg==" x="9.0" y="73.0" width="38.0" height="38.0">
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 -3;0 0" dur="3.0s" begin="0.00s" repeatCount="indefinite"/>
+    </image>
+    <circle cx="66" cy="22" r="24" fill="#2F80ED" opacity="0.12">
+      <animate attributeName="opacity" values="0.10;0.22;0.10" dur="3.0s" begin="0.12s" repeatCount="indefinite"/>
+    </circle>
+    <image class="sprite" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACQSURBVDhPYxj6gBFKw8H/xYr/oUyGhjtxEFplEZgGAcbY+yh6mKA0GCBrxgXQ1cANIEYzDCCrBRtAimYYgOlB8QI5ABwg2FzgtkgFyoKAXXF3oCwEAAUoXhfsWrsbjPEBsAGw6CIFwPTAvYBuyLFjx6AsCLCysoKyIACUNkBeYCQnBpAB4/F6KYoMGGjAwAAAC681dxMCX+wAAAAASUVORK5CYII=" x="47.0" y="3.0" width="38.0" height="38.0">
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 -3;0 0" dur="3.0s" begin="0.12s" repeatCount="indefinite"/>
+    </image>
+    <circle cx="104" cy="92" r="24" fill="#F2994A" opacity="0.12">
+      <animate attributeName="opacity" values="0.10;0.22;0.10" dur="3.0s" begin="0.24s" repeatCount="indefinite"/>
+    </circle>
+    <image class="sprite" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADISURBVDhPpZPhDQIhDIWLcQXXYI4bgJ8M4ggOwk8GYA7WcAj09eilNHBG/ZKmwmtfQdHRmvagG3+40xNpWnvp+WesQVNhmWraoMUYqZTCYZH9rh0mci9uRmi2beOsDb33VGsVzcFg2nyGNrn2PUYmAnuNlXYYoCCE0Ff7WgrPtOXPiAYU2mbL3+/guAKOhGlAJtrJOWfO+jsYTgABIYUa7ImugYFLKRHiG/pph/8H3kN7T9BPdghoSp/CJsj7cuBjs7A06KEgegERcHZxztfh2gAAAABJRU5ErkJggg==" x="85.0" y="73.0" width="38.0" height="38.0">
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 -3;0 0" dur="3.0s" begin="0.24s" repeatCount="indefinite"/>
+    </image>
+  </g>
+  <text class="ink-fill" x="190" y="101" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="76" font-weight="650" letter-spacing="0">Alem</text>
+</svg>

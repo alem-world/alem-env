@@ -1,0 +1,37 @@
+# Version control
+.git
+.gitignore
+
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+*.egg-info/
+dist/
+build/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Outputs and logs (generated at runtime, not needed in image)
+outputs/
+logs/
+visualise/output/
+
+# Large generated / cached files
+*.cache
+.conda/
+**/.DS_Store
+
+# Docs / assets not needed at runtime
+docs/*.pdf
+docs/*.png
+AUDIT_REPORT.md
+
+# Jupyter / notebooks
+*.ipynb
+.ipynb_checkpoints/

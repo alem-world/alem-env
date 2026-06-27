@@ -1,0 +1,9 @@
+chex>=0.1.90
+flax==0.10.3
+imageio>=2.37.0
+jax[cuda12]==0.4.38
+matplotlib>=3.8.0
+numpy>=1.26.0
+pillow>=10.0.0
+scipy>=1.12.0
+seaborn>=0.13.0

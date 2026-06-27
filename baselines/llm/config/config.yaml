@@ -1,0 +1,152 @@
+# Alem-Coop LLM Agent Evaluation Configuration
+
+# Environment settings
+EVAL_SEED: 9999  # Shared with RL eval — episode i uses seed EVAL_SEED + i
+
+envs:
+  names: "alem"
+  env_kwargs:
+    seed: null  # null = use EVAL_SEED + episode_idx (deterministic, matches RL eval)
+
+# Agent configuration
+agent:
+  type: "robust_all"  # Options: naive, cot, few_shot, robust_naive, robust_cot, dummy, random, custom, robust_all
+  prompt_mode: "specific_collaborative"
+  # Controls system prompt content and per-turn observation gating:
+  #   general              - action list + achievements only (no game rules or coordination info)
+  #   specific             - full game rules (How to play, survival, roles, crafting, progression);
+  #                          no coordination section or cues in observations
+  #   specific_collaborative - full game rules + coordination section + per-turn coordination cues
+  use_cot: true # for reasoning models
+  remember_cot: true
+  max_text_history: 8
+  max_image_history: 0  # 0 = text-only, >=1 = VLM mode
+  max_cot_history: 1
+  max_icl_history: 1000
+  cache_icl: false
+  reasoning: null  # null = auto (true for cot/robust_cot, false otherwise), true/false to override
+  show_affordances: true  # true = append legal actions to each observation
+  include_all_actions: false  # include full action list with descriptions in system prompt. false is fine when show_affordances=true (actions shown per-turn) and key action details are in game_rules.
+  progressively_display_game_info: true  # true = gate prompt sections and achievements by dungeon level (saves tokens). false = show everything upfront.
+  instructions_in_system_prompt: true  # true = put output format instructions in system prompt (once) instead of every turn
+  use_scratchpad: true
+  max_scratchpad_history: 1
+  max_scratchpad_length: 1000
+  use_communication: true
+  max_communication_history: 4
+  max_communication_length: 400
+  structured_scratchpad: false # if true, we provide a structure to the scratchpad prompt
+  structured_communication: false # if true, we provide a structure to the communication prompt
+  max_parse_retries: 0  # re-prompts when action parsing fails (0 = no retries, each retry = 1 extra LLM call)
+
+ALG_NAME: "llm"  # Set automatically in eval_alem.py based on agent type and model ID
+ENV_NAME: "Alem-Coop-Symbolic" # Options: Alem-Coop-Symbolic, Alem-Coop-Symbolic-Debug, Alem-Coop-Pixels
+
+# Client configuration (LLM API)
+# Required: one client per agent index.
+# clients[0] -> agent_id 0, clients[1] -> agent_id 1, clients[2] -> agent_id 2.
+clients:
+  - client_name: "vllm"  # Options: openai, vllm, anthropic, gemini, nvidia, xai
+    model_id: "google/gemma-4-E2B-it"
+    base_url: "http://localhost:8000/v1"
+    generate_kwargs:
+      temperature: 1.0
+      max_tokens: 8192
+      thinking_level: null  # Gemini 3 preferred thinking knob; ignored by non-Gemini clients.
+      seed: 42  # per-request seed for reproducibility
+    timeout: 420
+    max_retries: 5
+    delay: 2
+    alternate_roles: false
+  - client_name: "vllm"
+    model_id: "google/gemma-4-E2B-it"
+    base_url: "http://localhost:8000/v1"
+    generate_kwargs:
+      temperature: 1.0
+      max_tokens: 8192
+      thinking_level: null
+      seed: 42
+    timeout: 420
+    max_retries: 5
+    delay: 2
+    alternate_roles: false
+  - client_name: "vllm"
+    model_id: "google/gemma-4-E2B-it"
+    base_url: "http://localhost:8000/v1"
+    generate_kwargs:
+      temperature: 1.0
+      max_tokens: 8192
+      thinking_level: null
+      seed: 42
+    timeout: 420
+    max_retries: 5
+    delay: 2
+    alternate_roles: false
+
+# Evaluation settings
+eval:
+  output_dir: "outputs/alem_eval"
+  resume_from: null
+  run_name: null  # Optional stable base name for resumable runs; difficulty is appended automatically.
+  upload_only: false  # If true, skip evaluator.run() and only upload existing results from resume_from to W&B.
+
+  num_episodes:
+    alem: 20
+
+  num_workers: 4 # set to higher if you have resources and want faster eval
+  max_steps_per_episode: 10000  # upper bound only — episodes end early when all agents die (typically ~300 steps)
+
+  feedback_on_invalid_action: true
+  save_images: true
+  save_images_every_episode: false  # Useful for expensive API runs when you want GIF/HTML artifacts for every episode.
+  debug: true # if true, renders environment and prints extra info for debugging
+  generate_debriefs: true  # Post-episode LLM debriefs; expensive for API models, so API launchers can disable it.
+  icl_episodes: 0
+
+# Tasks to evaluate
+tasks:
+  alem_tasks:
+    - "default"
+
+# Alem-Coop settings
+# These params must match RL eval (_make_eval_env in baselines/utils.py) for
+# comparable results. The RL eval defaults are noted in comments below.
+alem:
+  num_agents: 3  # Number of agents (alem default)
+  max_timesteps: 10000
+  god_mode: false
+  coordination_difficulty: easy
+  
+  soft_specialization: true        # match RL
+  shared_reward: false             # match RL 
+  specialist_efficiency: 1.0       # Success rate for specialists (matches RL eval)
+  non_specialist_efficiency: 0.2   # Success rate for non-specialists (matches RL eval)
+  randomize_alpha: false           # Must be false for fixed-difficulty eval (matches RL eval)
+
+  wrapper:
+    version: "v0.125-fix-trading" 
+    unique_items: true
+    precise_location: true  # true: "2 steps north and 3 steps east" (per-axis); false: "5 steps north-east" (Manhattan + combined direction)
+    exact_coordinates: true  # true: replace relative location text with coordinates "(x=41, y=23)"
+    egocentric: false  # true: ahead/behind/left/right relative to facing; false: north/south/east/west
+    skip_items:
+      - "grass"
+      - "sand"
+      - "path"
+    edge_only_items:
+      - "water"
+    render_pixel_size: 64   # 10 (agent), 16 (img, default), 64 (human, RL-quality GIFs)
+    render_downscale: 2     # set to 2 when using pixel_size=64 to match RL GIF quality
+    llm_mode: "easy"  # Deprecated. Use agent.prompt_mode instead. Kept for backward compatibility.
+    use_ascii: false  # true: replace "You see:" text list with a 9×11 ASCII grid
+
+WANDB_MODE: "offline"  # Set to "online" to enable W&B logging, or "offline" to disable
+wandb:
+  entity: "<your-wandb-entity>"
+  project: "alem"
+  group: null
+  id: null       # Stable id lets preempted/requeued jobs resume the same W&B run.
+  resume: null   # Set to "allow" with a stable id for resumable cluster jobs.
+  name: null
+  notes: null
+  tags: ["llm-eval","better-prompt"]

@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a problem with Alem
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to file a bug! Please fill out the fields below.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected instead.
+      placeholder: When I run ... I expected ... but got ...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: The smallest code snippet or command that reproduces the issue.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Output of `python -c "import alem, jax; print(alem.__version__, jax.__version__)"`,
+        OS, and whether you are on CPU or GPU.
+      placeholder: |
+        alem 0.1.0, jax 0.4.38
+        Ubuntu 22.04, CUDA 12 GPU
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / traceback
+      description: Paste any relevant error output.
+      render: shell
