@@ -11,10 +11,15 @@
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
   <a href="https://arxiv.org/abs/2606.08340"><img alt="arXiv:2606.08340" src="https://img.shields.io/badge/arXiv-2606.08340-b31b1b.svg" /></a>
   <a href="https://huggingface.co/alem-world/alem-rl-baselines"><img alt="Hugging Face Models" src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-ffce1c.svg" /></a>
+  <a href="https://alem-world.github.io/"><img alt="Website" src="https://img.shields.io/badge/website-alem--world.github.io-111111.svg" /></a>
 </p>
 
 <p align="center">
-  <b><a href="https://alem-world.github.io/leaderboard">🏆 Leaderboard</a></b> · <a href="SUBMISSION.md">Submit a result</a> · <a href="https://arxiv.org/abs/2606.08340">📄 Paper</a> · <a href="https://huggingface.co/alem-world/alem-rl-baselines">🤗 Models</a>
+  <b><a href="https://alem-world.github.io/">🌐 Website</a></b> · <b><a href="https://alem-world.github.io/leaderboard.html">🏆 Leaderboard</a></b> · <a href="https://github.com/alem-world/alem-env/blob/main/SUBMISSION.md">Submit a result</a> · <a href="https://arxiv.org/abs/2606.08340">📄 Paper</a> · <a href="https://huggingface.co/alem-world/alem-rl-baselines">🤗 Models</a>
+</p>
+
+<p align="center">
+  <a href="https://alem-world.github.io/"><b>Open the Alem website for the interactive overview, model leaderboard, gameplay gallery, and reasoning traces →</b></a>
 </p>
 
 *Alem* is a JAX benchmark for open-ended multi-agent coordination. Building on [Craftax](https://github.com/MichaelTMatthews/Craftax) and [Multi-Agent Craftax / Craftax-Coop](https://github.com/BaselOmari/MA-Craftax), *Alem* introduces procedurally generated coordination tasks, soft specialisation, communication, and controllable coordination difficulty into a long-horizon survival world with exploration, crafting, trading, and combat. The same world is exposed through symbolic, pixel, and text interfaces, making it usable by MARL agents, language agents, and humans.
@@ -23,7 +28,18 @@
 
 ## Contents
 
-[RL Playing](#rl-agents-playing) · [LLM Playing](#llm-agents-playing) · [Install](#install) · [Quick Start](#quick-start) · [Configure](#configure) · [RL Agents](#rl-agents) · [LLM Agents](#llm-agents) · [Baselines](#baselines) · [Human Play](#human-play) · [Docker](#docker) · [Package Layout](#package-layout) · [Development](#development) · [RL vs LLM Interfaces](#rl-vs-llm-interfaces) · [Reproduce the Paper](#reproduce-the-paper) · [Submit to the Leaderboard](#submit-to-the-leaderboard) · [Contributing](#contributing) · [Citation](#citation) · [License](#license)
+[Website](#website) · [RL Playing](#rl-agents-playing) · [LLM Playing](#llm-agents-playing) · [Install](#install) · [Quick Start](#quick-start) · [Configure](#configure) · [RL Agents](#rl-agents) · [LLM Agents](#llm-agents) · [Baselines](#baselines) · [Human Play](#human-play) · [Docker](#docker) · [Package Layout](#package-layout) · [Development](#development) · [RL vs LLM Interfaces](#rl-vs-llm-interfaces) · [Reproduce the Paper](#reproduce-the-paper) · [Submit to the Leaderboard](#submit-to-the-leaderboard) · [Contributing](#contributing) · [Citation](#citation) · [License](#license)
+
+## Website
+
+The public Alem website is the best entry point for browsing the benchmark:
+
+- **Overview and paper figures:** <https://alem-world.github.io/>
+- **Interactive leaderboard:** <https://alem-world.github.io/leaderboard.html>
+- **Full reasoning traces:** <https://alem-world.github.io/traces.html>
+- **Submit a result:** [`SUBMISSION.md`](SUBMISSION.md)
+
+Use the website to compare LLM and MARL systems across Easy / Medium / Hard coordination settings, inspect per-model run details, and open synchronized gameplay/reasoning traces.
 
 ## RL Agents Playing
 
@@ -498,7 +514,7 @@ The paper's numbers were produced against *Alem* [`v0.1.0`](https://github.com/a
 
 ## Submit to the Leaderboard
 
-Alem is an open benchmark. To add an LLM agent, MARL policy, or custom harness result to the [leaderboard](https://alem-world.github.io/leaderboard), follow [`SUBMISSION.md`](SUBMISSION.md).
+Alem is an open benchmark. To add an LLM agent, MARL policy, or custom harness result to the [leaderboard](https://alem-world.github.io/leaderboard.html), follow [`SUBMISSION.md`](SUBMISSION.md).
 
 Submissions should include enough detail to reproduce the run: model or algorithm, harness, coordination difficulty, seeds, metrics, evaluation date, and any non-default config. Pull requests are preferred, but issues and email submissions are also accepted.
 
