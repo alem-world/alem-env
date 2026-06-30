@@ -15,11 +15,7 @@
 </p>
 
 <p align="center">
-  <b><a href="https://alem-world.github.io/">🌐 Website</a></b> · <b><a href="https://alem-world.github.io/leaderboard.html">🏆 Leaderboard</a></b> · <a href="https://github.com/alem-world/alem-env/blob/main/SUBMISSION.md">Submit a result</a> · <a href="https://arxiv.org/abs/2606.08340">📄 Paper</a> · <a href="https://huggingface.co/alem-world/alem-rl-baselines">🤗 Models</a>
-</p>
-
-<p align="center">
-  <a href="https://alem-world.github.io/"><b>Open the Alem website for the interactive overview, model leaderboard, gameplay gallery, and reasoning traces →</b></a>
+  <a href="https://alem-world.github.io/">🌐 Website</a> · <b><a href="https://alem-world.github.io/leaderboard.html">🏆 Leaderboard</a></b> · <a href="SUBMISSION.md">Submit a result</a> · <a href="https://arxiv.org/abs/2606.08340">📄 Paper</a> · <a href="https://huggingface.co/alem-world/alem-rl-baselines">🤗 Models</a>
 </p>
 
 *Alem* is a JAX benchmark for open-ended multi-agent coordination. Building on [Craftax](https://github.com/MichaelTMatthews/Craftax) and [Multi-Agent Craftax / Craftax-Coop](https://github.com/BaselOmari/MA-Craftax), *Alem* introduces procedurally generated coordination tasks, soft specialisation, communication, and controllable coordination difficulty into a long-horizon survival world with exploration, crafting, trading, and combat. The same world is exposed through symbolic, pixel, and text interfaces, making it usable by MARL agents, language agents, and humans.
@@ -28,18 +24,7 @@
 
 ## Contents
 
-[Website](#website) · [RL Playing](#rl-agents-playing) · [LLM Playing](#llm-agents-playing) · [Install](#install) · [Quick Start](#quick-start) · [Configure](#configure) · [RL Agents](#rl-agents) · [LLM Agents](#llm-agents) · [Baselines](#baselines) · [Human Play](#human-play) · [Docker](#docker) · [Package Layout](#package-layout) · [Development](#development) · [RL vs LLM Interfaces](#rl-vs-llm-interfaces) · [Reproduce the Paper](#reproduce-the-paper) · [Submit to the Leaderboard](#submit-to-the-leaderboard) · [Contributing](#contributing) · [Citation](#citation) · [License](#license)
-
-## Website
-
-The public Alem website is the best entry point for browsing the benchmark:
-
-- **Overview and paper figures:** <https://alem-world.github.io/>
-- **Interactive leaderboard:** <https://alem-world.github.io/leaderboard.html>
-- **Full reasoning traces:** <https://alem-world.github.io/traces.html>
-- **Submit a result:** [`SUBMISSION.md`](SUBMISSION.md)
-
-Use the website to compare LLM and MARL systems across Easy / Medium / Hard coordination settings, inspect per-model run details, and open synchronized gameplay/reasoning traces.
+[RL Playing](#rl-agents-playing) · [LLM Playing](#llm-agents-playing) · [Install](#install) · [Quick Start](#quick-start) · [Configure](#configure) · [RL Agents](#rl-agents) · [LLM Agents](#llm-agents) · [Baselines](#baselines) · [Human Play](#human-play) · [Docker](#docker) · [Package Layout](#package-layout) · [Development](#development) · [RL vs LLM Interfaces](#rl-vs-llm-interfaces) · [Reproduce the Paper](#reproduce-the-paper) · [Submit to the Leaderboard](#submit-to-the-leaderboard) · [Contributing](#contributing) · [Citation](#citation) · [License](#license)
 
 ## RL Agents Playing
 
@@ -56,16 +41,16 @@ Fast to train end-to-end in JAX. Full MARL training code and reference baselines
 The same world through the text interface. Each agent gets its own observation, broadcasts a free-form message to teammates every step and stores important information in scratchpad memory.
 
 <p align="center">
-  <img src="images/llm_communication.gif" alt="LLM agents coordinating in Alem" width="820" />
+  <img src="images/llm_agents_playing.gif" alt="LLM agents reasoning and coordinating in Alem" width="820" />
 </p>
 
-<p align="center"><sub>Gemini 3.1 Pro (medium). <b>THINKING</b> = the agent's private plan; <b>MESSAGE</b> = what it broadcasts to the team.<br/><b>Each panel is held for several seconds so the reasoning is readable — this is not the agents' real decision speed.</b></sub></p>
+<p align="center"><sub>Gemini 3.1 Pro (medium). <b>THINKING</b> = the agent's private plan; <b>MESSAGE</b> = what it broadcasts to the team. The view follows whichever agent is speaking; reasoning is typed out for readability, not the agents' real decision speed.</sub></p>
 
-The warrior plans turns ahead **and predicts how a teammate will react** — then it happens:
+Three agents negotiate a synchronous action. They plan ahead, model each other, lock in a shared step, and then execute it together:
 
-- **Plans ahead.** A turn-indexed plan `T87→T95`, with a fallback for the warrior's crafting-penalty.
-- **Theory of mind.** *"A2 will get my message at T88, so they'll cancel their T90 action and wait for T95"* — and at T88, A2 does exactly that.
-- **Coordinates out loud.** Lines all three up for a synchronous mine to earn the *Coord Mine Stone Hard* bonus.
+- **Plans ahead.** Each agent commits to a turn-indexed plan (`Step 5 Move · Step 6–7 Noop · Step 8 DO`) and waits in position.
+- **Theory of mind.** A0 predicts a teammate's move will break the plan — *"A2, your Step-6 DO will fail because A1 changed to Step 8"* — and A1 catches the clash: *"A0 and A2 sent conflicting times — EVERYONE DO ON STEP 8!"*
+- **Coordinates out loud.** All three line up and DO the 3-agent tree on the same step.
 
 See [LLM Agents](#llm-agents) to run it yourself.
 
