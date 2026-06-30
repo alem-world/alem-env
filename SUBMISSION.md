@@ -34,7 +34,7 @@ The default `robust_all` harness gives each agent broadcast communication, scrat
 
 ## 3. Collect Base% / Coord.% / Total%
 
-Each run reports normalised episode return as a percentage of the maximum achievable reward, **per category**: **Base%** (66 individual achievements), **Coord.%** (27 coordination achievements) and *Total%** (93). The three are normalised independently — **Total% is not the sum**. The runner logs `Team/ normal_reward_pct_of_max`, `Team/coord_reward_pct_of_max` and `Team/reward_pct_of_max`; aggregate across seeds with a 95% bootstrap CI (we use [`rliable`](https://github.com/google-research/rliable)).
+Each run reports normalised episode return as a percentage of the maximum achievable reward, **per category**: **Base%** (66 individual achievements), **Coord.%** (27 coordination achievements) and **Total%** (93). The three are normalised independently — **Total% is not the sum**. The runner logs `Team/ normal_reward_pct_of_max`, `Team/coord_reward_pct_of_max` and `Team/reward_pct_of_max`; aggregate across seeds with a 95% bootstrap CI (we use [`rliable`](https://github.com/google-research/rliable)).
 
 ## 4. Format your entry
 
