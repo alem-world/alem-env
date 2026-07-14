@@ -262,6 +262,10 @@ class OpenAIWrapper(LLMClientWrapper):
             reasoning_effort = self.client_kwargs.get("reasoning_effort")
             if reasoning_effort is not None and client_name == "openai":
                 api_kwargs["reasoning_effort"] = reasoning_effort
+            # Structured/constrained decoding (see eval_utils/constrained.py).
+            response_format = self.client_kwargs.get("response_format")
+            if response_format is not None:
+                api_kwargs["response_format"] = response_format
             # Pass enable_thinking to vLLM when a --reasoning-parser is active.
             # Only for vLLM — the real OpenAI API doesn't support extra_body.
             if client_name == "vllm":
@@ -639,6 +643,13 @@ def create_llm_client(client_config):
 
     def client_factory():
         client_name_lower = client_config.client_name.lower()
+        # Checked before the OpenAI-compatible branch below: a constrained client
+        # name (e.g. "vllm_constrained") also matches "vllm" and would otherwise
+        # fall through to the unconstrained wrapper.
+        if "constrained" in client_name_lower:
+            from .constrained import ConstrainedOpenAIWrapper
+
+            return ConstrainedOpenAIWrapper(client_config)
         if (
             "openai" in client_name_lower
             or "vllm" in client_name_lower
