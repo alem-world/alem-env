@@ -33,6 +33,15 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Free-text bounds, calibrated against the real corpus rather than assumed: across every
+# episode logged in outputs/ (n=6,913 communications, n=6,528 scratchpads), communication
+# runs median 55 / p99 310 chars and scratchpad median 73 / p99 504. These caps clear the
+# 99th percentile with headroom while guaranteeing the object closes well inside a default
+# max_tokens=768 budget (worst case ~1.5k chars, ~400 tokens). They exist to make the JSON
+# TERMINATE — see build_action_schema for the failure they prevent.
+COMMUNICATION_MAX_CHARS = 512
+SCRATCHPAD_MAX_CHARS = 1024
+
 # Source of truth for action names — same import the agents use.
 try:
     from alem.llm.alem_language_wrapper import ACTIONS as _WRAPPER_ACTIONS
@@ -48,14 +57,28 @@ def build_action_schema(want_communication=True, want_scratchpad=True):
     Communication/scratchpad fields are only requested when the prompt actually
     asks for them, so the constrained response stays faithful to the agent's
     prompt rather than forcing tags the agent will never read.
+
+    The free-text fields are LENGTH-BOUNDED, and that bound is load-bearing rather
+    than cosmetic: constraining `action` alone still lets a small model pick a valid
+    action instantly and then run away in `communication` until it hits max_tokens,
+    leaving the JSON unterminated. json.loads then fails, the re-emission never runs,
+    and the raw JSON leaks out untagged — so the constrained arm scores a PARSE FAILURE
+    on a response whose action was perfectly valid. Observed on gemma3:270m: 58 of 100
+    steps died exactly this way ('{"action": "Noop", "communication": "I am trying to
+    get a better understanding of..." <768 tokens later, still going>'), dragging the
+    constrained parse rate from 0.98 down to 0.65 on that seed. Bounding the enum is
+    not enough; the tail has to terminate too.
     """
     properties = {"action": {"type": "string", "enum": VALID_ACTIONS}}
     required = ["action"]
     if want_communication:
-        properties["communication"] = {"type": "string"}
+        properties["communication"] = {
+            "type": "string",
+            "maxLength": COMMUNICATION_MAX_CHARS,
+        }
         required.append("communication")
     if want_scratchpad:
-        properties["scratchpad"] = {"type": "string"}
+        properties["scratchpad"] = {"type": "string", "maxLength": SCRATCHPAD_MAX_CHARS}
         required.append("scratchpad")
     return {
         "type": "object",

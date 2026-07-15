@@ -62,6 +62,27 @@ class TestBuildActionSchema(unittest.TestCase):
         self.assertFalse(schema["additionalProperties"])
         self.assertEqual(schema["type"], "object")
 
+    def test_free_text_fields_are_length_bounded(self):
+        """Regression: constraining `action` alone is not enough — the tail must terminate.
+
+        gemma3:270m picked a valid action instantly, then rambled in `communication`
+        until max_tokens, leaving the JSON unterminated: json.loads failed, the XML
+        re-emission never ran, and the raw JSON leaked out untagged, scoring a PARSE
+        FAILURE on a response whose action was perfectly valid. 58/100 steps died this
+        way, pulling the constrained parse rate to 0.65 vs 0.98 unconstrained on the
+        same seed — i.e. the "fix" measured WORSE than doing nothing.
+
+        Bounds are calibrated to the real corpus (p99 = 310 / 504 chars), not invented,
+        and must stay generous enough not to truncate normal play.
+        """
+        schema = build_action_schema()
+        for field, p99 in (("communication", 310), ("scratchpad", 504)):
+            prop = schema["properties"][field]
+            self.assertIn("maxLength", prop, f"{field} is unbounded — the JSON can run away")
+            self.assertGreater(prop["maxLength"], p99, f"{field} cap truncates normal play")
+        total = sum(schema["properties"][f]["maxLength"] for f in ("communication", "scratchpad"))
+        self.assertLess(total, 2048, "bounds must close the object inside max_tokens=768")
+
     def test_optional_blocks_requested_when_wanted(self):
         schema = build_action_schema(want_communication=True, want_scratchpad=True)
         self.assertEqual(sorted(schema["properties"]), ["action", "communication", "scratchpad"])
