@@ -1,0 +1,130 @@
+"""Unit tests for the constrained-decoding client wrapper.
+
+Tests cover:
+- build_action_schema: action enum is the real action list, not a hand-copied one
+- build_action_schema: optional blocks requested only when the prompt asks for them
+- json_to_tagged: re-emits the XML envelope the existing agents parse
+- json_to_tagged: omits optional blocks the model left empty
+- create_llm_client: "vllm_constrained" routes to the constrained wrapper rather
+  than falling through to the plain OpenAI wrapper (it also matches "vllm")
+- ConstrainedOpenAIWrapper: strips the suffix so the parent's backend-specific
+  paths still match on the real client name
+"""
+
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
+from eval_utils.client import OpenAIWrapper, create_llm_client  # noqa: E402
+from eval_utils.constrained import (  # noqa: E402
+    VALID_ACTIONS,
+    ConstrainedOpenAIWrapper,
+    build_action_schema,
+    json_to_tagged,
+)
+from omegaconf import OmegaConf  # noqa: E402
+
+
+def _client_config(client_name):
+    return OmegaConf.create(
+        {
+            "client_name": client_name,
+            "model_id": "test-model",
+            "base_url": "http://localhost:11434/v1",
+            "timeout": 60,
+            "generate_kwargs": {"max_tokens": 768},
+            "max_retries": 1,
+            "delay": 0,
+            "alternate_roles": False,
+        }
+    )
+
+
+class TestBuildActionSchema(unittest.TestCase):
+    def test_action_enum_is_the_real_action_list(self):
+        """The enum must come from the wrapper's ACTIONS, not a copy that can drift."""
+        from alem.llm.alem_language_wrapper import ACTIONS
+
+        schema = build_action_schema()
+        self.assertEqual(schema["properties"]["action"]["enum"], list(ACTIONS))
+        self.assertEqual(VALID_ACTIONS, list(ACTIONS))
+
+    def test_enum_contains_known_actions(self):
+        enum = build_action_schema()["properties"]["action"]["enum"]
+        for action in ("Noop", "Do", "Move West"):
+            self.assertIn(action, enum)
+
+    def test_schema_is_strict(self):
+        schema = build_action_schema()
+        self.assertFalse(schema["additionalProperties"])
+        self.assertEqual(schema["type"], "object")
+
+    def test_optional_blocks_requested_when_wanted(self):
+        schema = build_action_schema(want_communication=True, want_scratchpad=True)
+        self.assertEqual(sorted(schema["properties"]), ["action", "communication", "scratchpad"])
+        self.assertEqual(sorted(schema["required"]), ["action", "communication", "scratchpad"])
+
+    def test_optional_blocks_omitted_when_not_wanted(self):
+        schema = build_action_schema(want_communication=False, want_scratchpad=False)
+        self.assertEqual(list(schema["properties"]), ["action"])
+        self.assertEqual(schema["required"], ["action"])
+
+    def test_only_communication_wanted(self):
+        schema = build_action_schema(want_communication=True, want_scratchpad=False)
+        self.assertEqual(sorted(schema["properties"]), ["action", "communication"])
+
+
+class TestJsonToTagged(unittest.TestCase):
+    def test_emits_all_blocks(self):
+        out = json_to_tagged(
+            {"action": "Move West", "communication": "heading west", "scratchpad": "plan"}
+        )
+        self.assertIn("<action>Move West</action>", out)
+        self.assertIn("<communication>heading west</communication>", out)
+        self.assertIn("<scratchpad>plan</scratchpad>", out)
+
+    def test_action_only(self):
+        self.assertEqual(json_to_tagged({"action": "Do"}), "<action>Do</action>")
+
+    def test_empty_optional_blocks_are_omitted(self):
+        """An empty string must not produce a stray empty tag."""
+        out = json_to_tagged({"action": "Do", "communication": "", "scratchpad": ""})
+        self.assertEqual(out, "<action>Do</action>")
+
+    def test_every_valid_action_round_trips_through_the_real_parser(self):
+        """The core claim: a schema-valid action is always parseable by the agent.
+
+        If the enum can emit an action the existing parser cannot read back, the
+        wrapper would trade one silent failure for another.
+        """
+        from eval_utils.agents.robust_naive import extract_action_multistrategy
+
+        for action in VALID_ACTIONS:
+            with self.subTest(action=action):
+                tagged = json_to_tagged(
+                    {"action": action, "communication": "hi", "scratchpad": "note"}
+                )
+                self.assertEqual(extract_action_multistrategy(tagged), action)
+
+
+class TestClientFactoryRouting(unittest.TestCase):
+    def test_vllm_constrained_routes_to_constrained_wrapper(self):
+        """Regression: "vllm_constrained" also matches "vllm" — order matters."""
+        client = create_llm_client(_client_config("vllm_constrained"))()
+        self.assertIsInstance(client, ConstrainedOpenAIWrapper)
+
+    def test_plain_vllm_is_not_constrained(self):
+        client = create_llm_client(_client_config("vllm"))()
+        self.assertIsInstance(client, OpenAIWrapper)
+        self.assertNotIsInstance(client, ConstrainedOpenAIWrapper)
+
+    def test_suffix_stripped_so_backend_paths_still_match(self):
+        client = create_llm_client(_client_config("vllm_constrained"))()
+        self.assertEqual(client.client_name, "vllm")
+
+
+if __name__ == "__main__":
+    unittest.main()
