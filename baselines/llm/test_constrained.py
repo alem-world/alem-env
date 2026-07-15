@@ -121,9 +121,38 @@ class TestClientFactoryRouting(unittest.TestCase):
         self.assertIsInstance(client, OpenAIWrapper)
         self.assertNotIsInstance(client, ConstrainedOpenAIWrapper)
 
+    def test_unconstrained_name_is_not_routed_as_constrained(self):
+        """Regression: "vllm_unconstrained" CONTAINS "constrained".
+
+        A substring test routed it to the constrained wrapper — silently giving a
+        caller who explicitly asked for UNCONSTRAINED decoding the constrained one.
+        It compounded: the old chained-replace() strip left the name as
+        "vllm_unconstrained" (no "_constrained" substring to remove), no branch in
+        _initialize_client matched "vllm", and self.client was never assigned while
+        _initialized was still set True — so it failed at generate() with an
+        AttributeError rather than at config time.
+        """
+        client = create_llm_client(_client_config("vllm_unconstrained"))()
+        self.assertNotIsInstance(client, ConstrainedOpenAIWrapper)
+        self.assertIsInstance(client, OpenAIWrapper)
+
     def test_suffix_stripped_so_backend_paths_still_match(self):
         client = create_llm_client(_client_config("vllm_constrained"))()
         self.assertEqual(client.client_name, "vllm")
+
+    def test_stripped_name_is_one_the_parent_actually_initializes(self):
+        """The strip and the routing must agree, or we get a client with no .client.
+
+        Pins the compound failure rather than just the routing: whatever name the
+        factory routes as constrained must strip to a backend _initialize_client
+        recognises, so the wrapper ends up with a live self.client.
+        """
+        client = create_llm_client(_client_config("vllm_constrained"))()
+        client._initialize_client()
+        self.assertTrue(
+            hasattr(client, "client"),
+            "constrained wrapper initialized without a backend client",
+        )
 
 
 if __name__ == "__main__":

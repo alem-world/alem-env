@@ -18,17 +18,18 @@ action *unemittable* rather than merely discouraged. The constrained JSON is the
 re-emitted as the exact XML the existing agents parse, so agent code, parse
 statistics, and the memory/communication path all stay untouched.
 
-Enabled by giving a client a `client_name` containing "constrained", e.g.
-`clients.0.client_name=vllm_constrained`.
+Enabled by appending "_constrained" to an OpenAI-compatible client name, e.g.
+`clients.0.client_name=vllm_constrained`. The suffix is exact: a name that merely
+contains the word (e.g. "vllm_unconstrained") is NOT constrained.
 """
 
 import json
 import logging
 
 try:
-    from .client import OpenAIWrapper
+    from .client import CONSTRAINED_SUFFIX, OpenAIWrapper
 except ImportError:
-    from eval_utils.client import OpenAIWrapper
+    from eval_utils.client import CONSTRAINED_SUFFIX, OpenAIWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -86,9 +87,10 @@ class ConstrainedOpenAIWrapper(OpenAIWrapper):
         super().__init__(client_config)
         # Strip the "_constrained" suffix so the parent's backend-specific paths
         # (base_url/api-key selection, extra_body) still match on the real name.
-        self.client_name = self.client_name.lower().replace("_constrained", "").replace(
-            "constrained_", ""
-        )
+        # removesuffix, not replace(): replace() would also delete an occurrence in
+        # the MIDDLE of a name, and it is the same suffix the factory routes on —
+        # so the two can never disagree about what "constrained" means.
+        self.client_name = self.client_name.lower().removesuffix(CONSTRAINED_SUFFIX)
         self._constrained_failures = 0
 
     def _wants(self, messages):
