@@ -4705,6 +4705,34 @@ def process_communication(state, actions, static_params):
     return state.replace(comm_messages=new_messages, comm_count=new_comm_count)
 
 
+def can_take_action(state):
+    """Return which players may act this step; dead, sleeping and resting ones may not.
+
+    ``alem_step`` applies this rule by forcing those players to NOOP. Callers that
+    process actions outside ``alem_step`` must evaluate it on the pre-step state,
+    since ``alem_step`` recomputes liveness and wakes players before returning.
+    """
+    return state.player_alive & jnp.logical_not(state.is_sleeping | state.is_resting)
+
+
+def process_separate_communication(state, comm_actions, static_params):
+    """Process a communication component independent of gameplay actions.
+
+    Communication action 0 is silence; values 1 through ``num_comm_channels``
+    broadcast the corresponding one-hot message for this step. Callers are
+    expected to have already silenced players that cannot act.
+    """
+    nc = static_params.num_comm_channels
+    channel = comm_actions - 1
+    is_comm = (channel >= 0) & (channel < nc)
+    messages = jax.nn.one_hot(channel, num_classes=nc, dtype=jnp.float32)
+    messages = jnp.where(is_comm[:, None], messages, jnp.zeros_like(messages))
+    return state.replace(
+        comm_messages=messages,
+        comm_count=state.comm_count + is_comm.astype(jnp.int32),
+    )
+
+
 def level_up_attributes(state: EnvState, action: jnp.array, params: EnvParams) -> EnvState:
     """Spend experience to increase selected player attributes.
 

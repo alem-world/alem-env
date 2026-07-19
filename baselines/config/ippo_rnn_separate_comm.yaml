@@ -1,0 +1,9 @@
+defaults:
+  - ippo_rnn
+  - _self_
+
+# Factorised IPPO: choose one gameplay action and one message each step.
+ENV_NAME: "Alem-Coop-Symbolic-Separate-Comm"
+RUN_NAME: "IPPO - Separate Communication"
+ALG_NAME: "ippo-rnn-separate-comm"
+NUM_COMM_CHANNELS: 4

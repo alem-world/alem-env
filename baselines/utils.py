@@ -193,6 +193,13 @@ def _run_eval_sequential(
         _inner = getattr(env, "_env", env)
         _mask_fn = getattr(_inner, "action_mask_fn", compute_action_mask)
 
+    action_space = env.action_space(env.agents[0])
+    gameplay_action_dim = int(
+        action_space.n
+        if hasattr(action_space, "n")
+        else action_space.num_categories[0]
+    )
+
     # JIT-compile one step: policy inference + env step_env (no auto-reset)
     @jax.jit
     def _step(state, obs, hstate, done_batch, rng):
@@ -202,7 +209,7 @@ def _run_eval_sequential(
             avail_actions = _mask_fn(state, env.default_params, env.static_env_params)
         else:
             avail_actions = jnp.ones(
-                (env.num_agents, env.action_space(env.agents[0]).n), dtype=jnp.bool_
+                (env.num_agents, gameplay_action_dim), dtype=jnp.bool_
             )
         new_hstate, actions = policy_fn(hstate, obs_batch, done_batch, act_rng, avail_actions)
         env_actions = {a: actions[i] for i, a in enumerate(env.agents)}
@@ -310,6 +317,12 @@ def _run_eval_parallel(env, policy_fn, init_hstate, rng, num_envs, num_steps, co
         _mask_fn = getattr(_inner, "action_mask_fn", compute_action_mask)
 
     num_agents = env.num_agents
+    action_space = env.action_space(env.agents[0])
+    gameplay_action_dim = int(
+        action_space.n
+        if hasattr(action_space, "n")
+        else action_space.num_categories[0]
+    )
     wrapped_env = LogWrapper(env)
     v_reset = jax.vmap(wrapped_env.reset, in_axes=(0,))
     v_step = jax.vmap(wrapped_env.step, in_axes=(0, 0, 0))
@@ -333,7 +346,7 @@ def _run_eval_parallel(env, policy_fn, init_hstate, rng, num_envs, num_steps, co
                 )(env_states.env_state)  # (num_envs, num_agents, num_actions)
             else:
                 avail_actions = jnp.ones(
-                    (num_envs, num_agents, env.action_space(env.agents[0]).n), dtype=jnp.bool_
+                    (num_envs, num_agents, gameplay_action_dim), dtype=jnp.bool_
                 )
             new_hstates, actions = jax.vmap(policy_fn)(
                 hstates, obs_batch, dones, act_rngs, avail_actions
@@ -553,11 +566,14 @@ def run_visualization_ippo_rnn(
             hstate, pi, _ = network.apply(trained_params, hstate, ac_in)
         if action_masking:
             mask = _mask_fn(env_state, env.default_params, env.static_env_params)
-            if nonshared_params:
+            if hasattr(pi, "with_gameplay_mask"):
+                pi = pi.with_gameplay_mask(mask[None, :, :])
+            elif nonshared_params:
                 masked_logits = pi.logits + jnp.where(mask[:, None, None, :], 0.0, -1e10)
+                pi = distrax.Categorical(logits=masked_logits)
             else:
                 masked_logits = pi.logits + jnp.where(mask[None, :, :], 0.0, -1e10)
-            pi = distrax.Categorical(logits=masked_logits)
+                pi = distrax.Categorical(logits=masked_logits)
         if nonshared_params:
             action = pi.sample(seed=rng)[:, 0, 0]
             env_act = {a: action[i] for i, a in enumerate(env.agents)}

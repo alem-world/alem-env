@@ -364,6 +364,14 @@ def compute_action_mask(
     return mask
 
 
+def compute_gameplay_action_mask(
+    state: EnvState, env_params: EnvParams, static_params: StaticEnvParams
+) -> Bool[Array, "player_count gameplay_actions"]:
+    """Return only the gameplay component of the legacy combined-action mask."""
+    gameplay_actions = len(Action) + max(0, static_params.player_count - 2)
+    return compute_action_mask(state, env_params, static_params)[:, :gameplay_actions]
+
+
 def compute_action_mask_single_agent(
     state: EnvState, env_params: EnvParams, static_params: StaticEnvParams
 ) -> Bool[Array, "player_count sa_action_dim"]:

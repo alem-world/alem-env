@@ -2,6 +2,9 @@ from alem.alem_coop.alem_state import EnvParams, StaticEnvParams
 from alem.alem_coop.envs.alem_pixels_env import AlemCoopPixelsEnv
 from alem.alem_coop.envs.alem_symbolic_env import AlemCoopSymbolicEnv
 from alem.alem_coop.envs.alem_symbolic_env_debug import AlemCoopSymbolicEnvDebug
+from alem.alem_coop.envs.alem_symbolic_separate_comm_env import (
+    AlemCoopSymbolicSeparateCommEnv,
+)
 from alem.alem_coop.envs.alem_symbolic_single_agent_env import AlemCoopSymbolicSingleAgentEnv
 
 
@@ -34,6 +37,8 @@ def make_alem_env_from_name(
 
     if name == "Alem-Coop-Symbolic":
         return AlemCoopSymbolicEnv(**kw)
+    elif name == "Alem-Coop-Symbolic-Separate-Comm":
+        return AlemCoopSymbolicSeparateCommEnv(**kw)
     # Single Agent is experimental!!
     elif name == "Alem-SingleAgent-Symbolic":
         return AlemCoopSymbolicSingleAgentEnv(**kw)

@@ -5,6 +5,7 @@ spaces. Keeping this local avoids pulling the full JaxMARL/Brax/MuJoCo stack
 for environment-only installs.
 """
 
+from collections.abc import Sequence
 from functools import partial
 from types import SimpleNamespace
 
@@ -21,9 +22,11 @@ import jax.numpy as jnp
 try:
     from jaxmarl.environments.spaces import Box as _BoxBase
     from jaxmarl.environments.spaces import Discrete as _DiscreteBase
+    from jaxmarl.environments.spaces import MultiDiscrete as _MultiDiscreteBase
 except ImportError:
     _DiscreteBase = object
     _BoxBase = object
+    _MultiDiscreteBase = object
 
 
 class Discrete(_DiscreteBase):
@@ -102,7 +105,35 @@ class Box(_BoxBase):
         return jnp.logical_and(jnp.all(x >= self.low), jnp.all(x <= self.high))
 
 
-spaces = SimpleNamespace(Discrete=Discrete, Box=Box)
+class MultiDiscrete(_MultiDiscreteBase):
+    """Small jittable product of categorical action spaces."""
+
+    def __init__(self, num_categories: Sequence[int], dtype=jnp.int32):
+        categories = jnp.asarray(num_categories, dtype=dtype)
+        assert categories.ndim == 1
+        assert bool(jnp.all(categories > 0))
+        self.num_categories = categories
+        self.shape = (len(num_categories),)
+        self.dtype = dtype
+
+    def sample(self, rng: chex.PRNGKey) -> chex.Array:
+        return jax.random.randint(
+            rng,
+            shape=self.shape,
+            minval=0,
+            maxval=self.num_categories,
+            dtype=self.dtype,
+        )
+
+    def contains(self, x) -> bool:
+        x = jnp.asarray(x)
+        return jnp.logical_and(
+            x.shape == self.shape,
+            jnp.all(jnp.logical_and(x >= 0, x < self.num_categories)),
+        )
+
+
+spaces = SimpleNamespace(Discrete=Discrete, Box=Box, MultiDiscrete=MultiDiscrete)
 
 
 class MultiAgentEnv:
