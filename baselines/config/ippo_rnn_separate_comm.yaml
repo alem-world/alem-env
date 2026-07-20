@@ -7,3 +7,8 @@ ENV_NAME: "Alem-Coop-Symbolic-Separate-Comm"
 RUN_NAME: "IPPO - Separate Communication"
 ALG_NAME: "ippo-rnn-separate-comm"
 NUM_COMM_CHANNELS: 4
+
+# Force every agent to stay silent every step. Keeps the split action
+# space, the network heads and the observation layout identical to a normal
+# split run.
+DISABLE_COMM: false

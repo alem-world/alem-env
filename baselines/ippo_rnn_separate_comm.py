@@ -42,6 +42,7 @@ from omegaconf import OmegaConf
 
 import wandb
 from alem.alem_coop.action_masking import compute_action_mask
+from alem.alem_coop.game_logic import can_take_action
 from alem.alem_coop.alem_state import (
     COORDINATION_PRESETS,
     DIFFICULTY_ALPHAS,
@@ -168,6 +169,10 @@ class FactorisedCategorical(NamedTuple):
         logits = self.gameplay.logits + jnp.where(mask, 0.0, -1e10)
         return self._replace(gameplay=distrax.Categorical(logits=logits))
 
+    def with_communication_mask(self, mask):
+        logits = self.communication.logits + jnp.where(mask, 0.0, -1e10)
+        return self._replace(communication=distrax.Categorical(logits=logits))
+
 
 class Transition(NamedTuple):
     global_done: jnp.ndarray
@@ -179,6 +184,7 @@ class Transition(NamedTuple):
     obs: jnp.ndarray
     info: jnp.ndarray
     avail_actions: jnp.ndarray
+    avail_communications: jnp.ndarray
 
 
 def batchify(x: dict, agent_list, num_actors):
@@ -205,6 +211,32 @@ def get_policy_dims(env):
 def apply_gameplay_mask(pi, mask):
     """Mask gameplay logits while leaving every communication choice valid."""
     return pi.with_gameplay_mask(mask)
+
+
+def build_comm_mask(env_state, config, num_actors, communication_action_dim, inner_env):
+    """Legal-communication mask laid out to match ``batchify`` (agent-major).
+
+    Mirrors the single-action-space baseline: an agent that cannot act (dead,
+    sleeping or resting) may only stay silent, exactly as ``compute_action_mask``
+    collapses those rows to NOOP-only. Without this the communication head keeps
+    a full ln(K+1) of entropy and a live policy gradient on steps where
+    ``step_env`` discards the message, injecting pure variance into the shared
+    trunk and into the joint PPO ratio.
+
+    ``DISABLE_COMM`` forces silence everywhere, giving a comms-off ablation of
+    the split action space that is otherwise identical to the split runs.
+    """
+    if config.get("DISABLE_COMM", False):
+        mask = jnp.zeros((num_actors, communication_action_dim), dtype=jnp.bool_)
+        return mask.at[:, 0].set(True)
+
+    if not config.get("ACTION_MASKING", False):
+        return jnp.ones((num_actors, communication_action_dim), dtype=jnp.bool_)
+
+    can_act = jax.vmap(can_take_action)(env_state)  # (NUM_ENVS, player_count)
+    can_act = can_act.transpose(1, 0).reshape(num_actors)  # agent-major, matches batchify
+    mask = jnp.ones((num_actors, communication_action_dim), dtype=jnp.bool_)
+    return mask.at[:, 1:].set(can_act[:, None])
 
 
 # ===========================
@@ -320,6 +352,16 @@ def make_train(config, env):
                         (config["NUM_ACTORS"], gameplay_action_dim), dtype=jnp.bool_
                     )
 
+                # COMMUNICATION MASKING
+                comm_mask_batch = build_comm_mask(
+                    env_state.env_state,
+                    config,
+                    config["NUM_ACTORS"],
+                    communication_action_dim,
+                    env._env,
+                )
+                pi = pi.with_communication_mask(comm_mask_batch)
+
                 action = pi.sample(seed=_rng)
                 log_prob = pi.log_prob(action)
                 env_act = unbatchify(action, env.agents, config["NUM_ENVS"], env.num_agents)
@@ -341,6 +383,7 @@ def make_train(config, env):
                     obs_batch,
                     info,
                     mask_batch.squeeze(),
+                    comm_mask_batch.squeeze(),
                 )
                 runner_state = (train_state, env_state, obsv, done_batch, hstate, rng)
                 return runner_state, transition
@@ -398,6 +441,9 @@ def make_train(config, env):
                         # Apply action mask to logits (same mask used during rollout)
                         if config.get("ACTION_MASKING", False):
                             pi = apply_gameplay_mask(pi, traj_batch.avail_actions)
+                        # Replay the exact rollout comm mask; deriving it here instead
+                        # would desync the ratio from the stored log-probs.
+                        pi = pi.with_communication_mask(traj_batch.avail_communications)
                         log_prob = pi.log_prob(traj_batch.action)
 
                         # CALCULATE VALUE LOSS
@@ -709,6 +755,12 @@ def single_run(config):
         ac_in = (obs_batch[None, :], done_batch[None, :])
         hstate, pi, _ = network.apply(trained_params, hstate, ac_in)
         pi = apply_gameplay_mask(pi, avail_actions[None, :, :])
+        if config.get("DISABLE_COMM", False):
+            # step_env already silences agents that cannot act, so the only mask
+            # that changes eval behaviour is the comms-off ablation.
+            comm_mask = jnp.zeros((env.num_agents, communication_action_dim), dtype=jnp.bool_)
+            comm_mask = comm_mask.at[:, 0].set(True)
+            pi = pi.with_communication_mask(comm_mask[None, :, :])
         actions = pi.mode()
         return hstate, actions[0]  # squeeze time dim
 
