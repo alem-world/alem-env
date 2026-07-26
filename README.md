@@ -495,7 +495,7 @@ Text observations apply lightweight preprocessing, including compact local-state
 
 The full experiments from the paper — the 13-LLM evaluation and the RL baselines (IPPO, HyperMARL-IPPO, MAPPO, PQN-VDN) — live in [`baselines/`](baselines); see [Baselines](#baselines) for launch commands and configs.
 
-The paper's numbers were produced against *Alem* [`v0.1.0`](https://github.com/alem-world/alem-env/releases/tag/v0.1.0). For the exact settings to use when reporting an Alem number — seeds, episode count, metrics — see the canonical [evaluation protocol](EVALUATION.md).
+The paper's numbers were produced against *Alem* [`v0.1.0`](https://github.com/alem-world/alem-env/releases/tag/v0.1.0). For the exact settings to use when reporting an Alem number — seeds, episode count, metrics — see the canonical [evaluation protocol](EVALUATION.md). To collect a human baseline under the same protocol, see [`PLAY_WITH_HUMAN_INTERFACE.md`](PLAY_WITH_HUMAN_INTERFACE.md).
 
 ## Contributing
 

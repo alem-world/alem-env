@@ -625,6 +625,86 @@ class AlemRenderer:
             clock.tick(60)
 
 
+    def show_menu(self, title, options, subtitle=None):
+        """Show a full-window keyboard-navigable menu. Blocks until a choice is made.
+
+        ``options`` is a list of ``label`` strings or ``(label, description)``
+        tuples. Navigate with Up/Down or W/S, choose with ENTER/SPACE, cancel
+        with ESCAPE.
+
+        Returns the selected index, or None if cancelled / window closed.
+        """
+        sw, sh = self.screen_size
+        margin = self._pad * 2
+        norm = [(o, "") if isinstance(o, str) else (o[0], o[1] if len(o) > 1 else "") for o in options]
+
+        title_surf = self._font_page_title.render(title, True, (255, 255, 255))
+        sub_surf = (
+            self._font_hints.render(subtitle, True, (190, 190, 190)) if subtitle else None
+        )
+        footer_surf = self._font_hints.render(
+            "↑ / ↓ select   ·   ENTER choose   ·   ESC cancel", True, (190, 190, 190)
+        )
+
+        selected = 0
+        clock = pygame.time.Clock()
+
+        while True:
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    return None
+                if e.type == pygame.KEYDOWN:
+                    if e.key in (pygame.K_UP, pygame.K_w):
+                        selected = (selected - 1) % len(norm)
+                    elif e.key in (pygame.K_DOWN, pygame.K_s):
+                        selected = (selected + 1) % len(norm)
+                    elif e.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+                        return selected
+                    elif e.key == pygame.K_ESCAPE:
+                        return None
+
+            self.screen_surface.fill((12, 12, 16))
+            self.screen_surface.blit(title_surf, (margin, self._pad))
+            y = self._pad + title_surf.get_height() + self._pad // 2
+            if sub_surf is not None:
+                self.screen_surface.blit(sub_surf, (margin, y))
+                y += sub_surf.get_height() + self._pad
+            y += self._pad // 2
+
+            for i, (label, desc) in enumerate(norm):
+                is_sel = i == selected
+                row_bg = (46, 90, 60) if is_sel else (28, 28, 34)
+                label_col = (235, 255, 235) if is_sel else (215, 215, 215)
+                desc_col = (190, 230, 200) if is_sel else (150, 150, 155)
+                label_surf = self._font_page_head.render(label, True, label_col)
+                desc_surf = self._font_hints.render(desc, True, desc_col) if desc else None
+                row_h = (
+                    label_surf.get_height()
+                    + (desc_surf.get_height() + 2 if desc_surf else 0)
+                    + self._pad
+                )
+                rect = pygame.Rect(margin, y, sw - margin * 2, row_h)
+                pygame.draw.rect(self.screen_surface, row_bg, rect, border_radius=6)
+                if is_sel:
+                    pygame.draw.rect(
+                        self.screen_surface, (110, 220, 140), rect, width=2, border_radius=6
+                    )
+                ty = y + self._pad // 2
+                self.screen_surface.blit(label_surf, (margin + self._pad, ty))
+                if desc_surf is not None:
+                    self.screen_surface.blit(
+                        desc_surf, (margin + self._pad, ty + label_surf.get_height() + 2)
+                    )
+                y += row_h + max(4, self._pad // 3)
+
+            self.screen_surface.blit(
+                footer_surf,
+                ((sw - footer_surf.get_width()) // 2, sh - self._pad - footer_surf.get_height()),
+            )
+            pygame.display.flip()
+            clock.tick(60)
+
+
 def print_new_achievements(old_achievements, new_achievements, num_players):
     for player in range(num_players):
         for i in range(old_achievements.shape[1]):
