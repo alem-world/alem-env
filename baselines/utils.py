@@ -376,7 +376,7 @@ def _make_eval_env(config, env_name, difficulty, static_env_params=None):
     from alem.alem_coop.alem_state import EnvParams, get_coordination_params
     from alem.alem_env import make_alem_env_from_name
 
-    scale_base = config.get("SCALE_BASE_DIFFICULTY", False)
+    scale_base = config.get("SCALE_BASE_DIFFICULTY", True)
     coord_kwargs = get_coordination_params(difficulty, scale_base=scale_base)
     eval_env_params = EnvParams(
         shared_reward=config.get("SHARED_REWARD", True),
