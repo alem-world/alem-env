@@ -21,6 +21,14 @@ build/
 outputs/
 logs/
 visualise/output/
+**/outputs/
+**/logs/
+**/wandb/
+
+# Virtualenvs and downloaded model checkpoints (can be many GB)
+.venv/
+.venv-*/
+alem-rl-baselines/
 
 # Large generated / cached files
 *.cache

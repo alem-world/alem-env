@@ -219,6 +219,55 @@ python baselines/llm/eval_alem.py \
     agent.max_image_history=0 agent.max_text_history=16
 ```
 
+## Docker (one-command eval)
+
+If you'd rather not install anything locally, the [`alem-llm`](../../docker/Dockerfile.llm)
+image serves your model with vLLM **and** runs a 3-agent evaluation against it in a
+single `docker run`. It needs [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+on the host and `--gpus` at runtime.
+
+```bash
+# Build once (from the repo root)
+docker build -f docker/Dockerfile.llm -t alem-llm .
+
+# Serve + evaluate. Only MODEL_ID is required; mount the HF cache to download once.
+docker run --rm --gpus all --shm-size=16g \
+    -e MODEL_ID=meta-llama/Llama-3.2-1B-Instruct \
+    -e HF_TOKEN=$HF_TOKEN \
+    -v ~/.cache/huggingface:/app/.cache/huggingface \
+    alem-llm eval.num_episodes.alem=5
+```
+
+The entrypoint ([`docker/entrypoint.llm.sh`](../../docker/entrypoint.llm.sh)) starts
+`vllm serve`, waits for the `/v1/models` endpoint, then launches `eval_alem.py` with all
+three agents pointed at that server. Trailing arguments and `EVAL_EXTRA_ARGS` are passed
+through as Hydra overrides, so everything in [Configuration](#configuration) still applies
+(e.g. `alem.coordination_difficulty=hard`, `agent.type=robust_cot`).
+
+| Env var | Default | Purpose |
+|---------|---------|---------|
+| `MODEL_ID` | *(required)* | HuggingFace model id served to all 3 agents |
+| `HF_TOKEN` | — | HuggingFace token (needed for gated models) |
+| `WANDB_API_KEY` / `WANDB_MODE` | `disabled` | Set both to log the run to W&B (`WANDB_MODE=online`) |
+| `VLLM_EXTRA_ARGS` | `--tensor-parallel-size 1` | Extra `vllm serve` flags; use `--tensor-parallel-size N` for large models (raise `--shm-size` too) |
+| `GPU_UTIL` | `0.90` | vLLM GPU memory fraction |
+| `MAX_MODEL_LEN` | `32768` | Max context length |
+| `SKIP_VLLM` | `0` | Set to `1` to reuse an already-running server at `VLLM_PORT` instead of starting one |
+
+```bash
+# Large model across 4 GPUs
+docker run --rm --gpus all --shm-size=64g \
+    -e MODEL_ID=meta-llama/Llama-3.3-70B-Instruct \
+    -e VLLM_EXTRA_ARGS="--tensor-parallel-size 4" \
+    -e HF_TOKEN=$HF_TOKEN \
+    -v ~/.cache/huggingface:/app/.cache/huggingface \
+    alem-llm
+```
+
+For RL training there's a parallel [`alem-rl`](../../docker/Dockerfile.rl) image
+(`docker run --gpus all alem-rl ippo_rnn TOTAL_TIMESTEPS=1e4 ...`). See the main
+[README → Docker](../../README.md#docker) for the full overview.
+
 ## Configuration
 
 All settings live in `config/config.yaml` and can be overridden via Hydra CLI.

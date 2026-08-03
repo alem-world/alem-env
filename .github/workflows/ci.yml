@@ -55,3 +55,31 @@ jobs:
 
       - name: Fast environment tests
         run: python -m unittest alem.tests.test_env_factory -v
+
+  # Separate from `test` because these need the baselines-llm extra (omegaconf,
+  # wandb, provider SDKs) that the core suite deliberately does without.
+  baselines-llm:
+    needs: lint
+    runs-on: ubuntu-latest
+    env:
+      JAX_PLATFORMS: cpu
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ALEM with LLM baselines
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,baselines-llm]"
+
+      - name: LLM wrapper and prompt tests
+        run: |
+          python -m unittest \
+            baselines.llm.test_ascii_map \
+            baselines.llm.test_language_wrapper \
+            baselines.llm.test_prompt_builder \
+            -v

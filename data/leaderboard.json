@@ -1,0 +1,1119 @@
+{
+  "meta": {
+    "benchmark": "ALEM",
+    "version": "v1.0",
+    "harness": "reason-then-act (ReAct-style), fresh prompt each step",
+    "evaluation_date": "2026-06",
+    "protocol": "Zero-shot homogeneous teams of 3 agents. 20 seeds/difficulty for open-weight models, 10 for proprietary (API cost). 95% stratified bootstrap CIs via rliable.",
+    "metric_note": "Scores are normalised episode return as % of the maximum achievable reward in each category. Base%, Coord.% and Total% are each normalised independently, so Total% is not the sum of Base% and Coord.%. Each score is [mean, ci_low, ci_high].",
+    "reward_bounds": {
+      "base_achievements": 66,
+      "coord_achievements": 27,
+      "total_achievements": 93
+    },
+    "difficulties": {
+      "easy": "alpha = 0.30",
+      "medium": "alpha = 0.60",
+      "hard": "alpha = 0.90"
+    },
+    "harness_version": "robust_all_v0.1",
+    "run_metadata_note": "Harness/date columns report the evaluation harness and run date for the selected difficulty."
+  },
+  "homogeneous": [
+    {
+      "id": "gemini-3.1-pro-high",
+      "name": "Gemini 3.1 Pro",
+      "config": "high reasoning",
+      "type": "proprietary",
+      "family": "Gemini",
+      "params": "\u2014",
+      "params_sort": 9999,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            18.1,
+            14.2,
+            21.8
+          ],
+          "coord": [
+            18.0,
+            12.5,
+            23.9
+          ],
+          "total": [
+            18.1,
+            14.8,
+            21.0
+          ]
+        },
+        "medium": {
+          "base": [
+            15.1,
+            12.3,
+            18.0
+          ],
+          "coord": [
+            23.4,
+            20.3,
+            27.0
+          ],
+          "total": [
+            18.6,
+            16.3,
+            21.3
+          ]
+        },
+        "hard": {
+          "base": [
+            13.8,
+            11.2,
+            16.6
+          ],
+          "coord": [
+            17.5,
+            13.5,
+            21.5
+          ],
+          "total": [
+            15.4,
+            13.2,
+            17.8
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "medium": "2026-04-24",
+        "hard": "2026-04-24",
+        "easy": "2026-04-24"
+      }
+    },
+    {
+      "id": "gpt-5.4-high",
+      "name": "GPT-5.4",
+      "config": "high reasoning",
+      "type": "proprietary",
+      "family": "GPT",
+      "params": "\u2014",
+      "params_sort": 9998,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            14.1,
+            11.5,
+            16.7
+          ],
+          "coord": [
+            7.0,
+            3.6,
+            10.8
+          ],
+          "total": [
+            11.1,
+            9.2,
+            13.0
+          ]
+        },
+        "medium": {
+          "base": [
+            10.0,
+            6.5,
+            13.5
+          ],
+          "coord": [
+            4.0,
+            2.1,
+            5.7
+          ],
+          "total": [
+            7.4,
+            4.9,
+            9.8
+          ]
+        },
+        "hard": {
+          "base": [
+            11.8,
+            8.0,
+            15.3
+          ],
+          "coord": [
+            4.2,
+            2.0,
+            6.6
+          ],
+          "total": [
+            8.6,
+            5.9,
+            10.8
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "hard": "2026-03-05",
+        "medium": "2026-03-05",
+        "easy": "2026-03-05"
+      }
+    },
+    {
+      "id": "gemma-4-31b-it",
+      "name": "Gemma 4 31B",
+      "config": "instruct",
+      "type": "open-weight",
+      "family": "Gemma",
+      "params": "31B dense",
+      "params_sort": 31,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            9.6,
+            7.4,
+            11.9
+          ],
+          "coord": [
+            8.6,
+            6.4,
+            11.0
+          ],
+          "total": [
+            9.2,
+            7.6,
+            10.8
+          ]
+        },
+        "medium": {
+          "base": [
+            9.7,
+            8.0,
+            11.3
+          ],
+          "coord": [
+            10.6,
+            8.3,
+            13.0
+          ],
+          "total": [
+            10.1,
+            9.0,
+            11.1
+          ]
+        },
+        "hard": {
+          "base": [
+            7.3,
+            5.9,
+            8.9
+          ],
+          "coord": [
+            8.8,
+            6.9,
+            10.9
+          ],
+          "total": [
+            8.0,
+            6.7,
+            9.1
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-18",
+        "medium": "2026-04-20",
+        "hard": "2026-04-21"
+      }
+    },
+    {
+      "id": "gemma-4-26b-a4b-it",
+      "name": "Gemma 4 26B-A4B",
+      "config": "instruct, MoE",
+      "type": "open-weight",
+      "family": "Gemma",
+      "params": "26B (4B active)",
+      "params_sort": 4,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            4.3,
+            2.6,
+            6.2
+          ],
+          "coord": [
+            7.3,
+            5.0,
+            9.6
+          ],
+          "total": [
+            5.6,
+            3.8,
+            7.4
+          ]
+        },
+        "medium": {
+          "base": [
+            4.1,
+            2.8,
+            5.3
+          ],
+          "coord": [
+            6.1,
+            3.8,
+            8.3
+          ],
+          "total": [
+            4.9,
+            3.3,
+            6.4
+          ]
+        },
+        "hard": {
+          "base": [
+            5.9,
+            5.3,
+            6.6
+          ],
+          "coord": [
+            9.5,
+            7.7,
+            11.3
+          ],
+          "total": [
+            7.4,
+            6.6,
+            8.2
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-21",
+        "medium": "2026-04-22",
+        "hard": "2026-04-24"
+      }
+    },
+    {
+      "id": "qwen3.6-27b",
+      "name": "Qwen 3.6 27B",
+      "config": "dense",
+      "type": "open-weight",
+      "family": "Qwen",
+      "params": "27B dense",
+      "params_sort": 27,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            5.1,
+            3.4,
+            6.9
+          ],
+          "coord": [
+            4.7,
+            2.9,
+            6.7
+          ],
+          "total": [
+            4.9,
+            3.4,
+            6.5
+          ]
+        },
+        "medium": {
+          "base": [
+            7.0,
+            5.4,
+            8.8
+          ],
+          "coord": [
+            6.1,
+            4.3,
+            7.9
+          ],
+          "total": [
+            6.6,
+            5.4,
+            7.9
+          ]
+        },
+        "hard": {
+          "base": [
+            7.5,
+            5.7,
+            9.5
+          ],
+          "coord": [
+            7.2,
+            5.4,
+            8.9
+          ],
+          "total": [
+            7.4,
+            6.1,
+            8.8
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-23",
+        "medium": "2026-04-23",
+        "hard": "2026-04-25"
+      }
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen 3.6 35B-A3B",
+      "config": "MoE",
+      "type": "open-weight",
+      "family": "Qwen",
+      "params": "35B (3B active)",
+      "params_sort": 3,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            2.8,
+            1.4,
+            4.5
+          ],
+          "coord": [
+            4.4,
+            2.3,
+            6.7
+          ],
+          "total": [
+            3.5,
+            1.8,
+            5.3
+          ]
+        },
+        "medium": {
+          "base": [
+            6.3,
+            5.0,
+            7.9
+          ],
+          "coord": [
+            9.7,
+            7.7,
+            11.6
+          ],
+          "total": [
+            7.7,
+            6.3,
+            9.1
+          ]
+        },
+        "hard": {
+          "base": [
+            6.3,
+            4.8,
+            8.1
+          ],
+          "coord": [
+            8.7,
+            6.7,
+            10.7
+          ],
+          "total": [
+            7.3,
+            6.0,
+            8.6
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-21",
+        "medium": "2026-04-23",
+        "hard": "2026-04-24"
+      }
+    },
+    {
+      "id": "qwen3.5-27b",
+      "name": "Qwen 3.5 27B",
+      "config": "dense",
+      "type": "open-weight",
+      "family": "Qwen",
+      "params": "27B dense",
+      "params_sort": 27,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            4.8,
+            3.1,
+            6.9
+          ],
+          "coord": [
+            7.0,
+            4.9,
+            9.2
+          ],
+          "total": [
+            5.7,
+            4.1,
+            7.4
+          ]
+        },
+        "medium": {
+          "base": [
+            4.1,
+            2.4,
+            6.0
+          ],
+          "coord": [
+            6.5,
+            3.8,
+            9.3
+          ],
+          "total": [
+            5.1,
+            3.1,
+            7.2
+          ]
+        },
+        "hard": {
+          "base": [
+            5.1,
+            3.5,
+            7.1
+          ],
+          "coord": [
+            8.1,
+            5.8,
+            10.4
+          ],
+          "total": [
+            6.4,
+            4.8,
+            7.9
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "medium": "2026-04-19",
+        "easy": "2026-04-22",
+        "hard": "2026-04-27"
+      }
+    },
+    {
+      "id": "qwen3.5-122b-a10b",
+      "name": "Qwen 3.5 122B-A10B",
+      "config": "MoE",
+      "type": "open-weight",
+      "family": "Qwen",
+      "params": "122B (10B active)",
+      "params_sort": 10,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            5.4,
+            4.3,
+            6.5
+          ],
+          "coord": [
+            8.4,
+            6.6,
+            10.0
+          ],
+          "total": [
+            6.6,
+            5.5,
+            7.7
+          ]
+        },
+        "medium": {
+          "base": [
+            5.0,
+            4.6,
+            5.3
+          ],
+          "coord": [
+            9.6,
+            7.5,
+            11.5
+          ],
+          "total": [
+            6.9,
+            6.0,
+            7.9
+          ]
+        },
+        "hard": {
+          "base": [
+            4.7,
+            3.9,
+            5.5
+          ],
+          "coord": [
+            8.3,
+            6.2,
+            10.6
+          ],
+          "total": [
+            6.2,
+            5.0,
+            7.4
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-19",
+        "medium": "2026-04-20",
+        "hard": "2026-04-20"
+      }
+    },
+    {
+      "id": "qwen3.5-35b-a3b",
+      "name": "Qwen 3.5 35B-A3B",
+      "config": "MoE",
+      "type": "open-weight",
+      "family": "Qwen",
+      "params": "35B (3B active)",
+      "params_sort": 3,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            1.9,
+            1.0,
+            2.9
+          ],
+          "coord": [
+            4.2,
+            2.1,
+            6.3
+          ],
+          "total": [
+            2.9,
+            1.6,
+            4.2
+          ]
+        },
+        "medium": {
+          "base": [
+            2.2,
+            1.4,
+            3.1
+          ],
+          "coord": [
+            4.7,
+            2.7,
+            6.8
+          ],
+          "total": [
+            3.3,
+            2.0,
+            4.6
+          ]
+        },
+        "hard": {
+          "base": [
+            2.9,
+            2.2,
+            3.7
+          ],
+          "coord": [
+            5.3,
+            3.4,
+            7.5
+          ],
+          "total": [
+            4.0,
+            2.7,
+            5.2
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-18",
+        "medium": "2026-04-19",
+        "hard": "2026-04-19"
+      }
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen 3.5 9B",
+      "config": "dense",
+      "type": "open-weight",
+      "family": "Qwen",
+      "params": "9B dense",
+      "params_sort": 9,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            2.7,
+            2.0,
+            3.4
+          ],
+          "coord": [
+            7.0,
+            4.6,
+            9.5
+          ],
+          "total": [
+            4.6,
+            3.2,
+            5.9
+          ]
+        },
+        "medium": {
+          "base": [
+            2.7,
+            1.6,
+            4.0
+          ],
+          "coord": [
+            4.7,
+            2.7,
+            7.1
+          ],
+          "total": [
+            3.6,
+            2.2,
+            4.9
+          ]
+        },
+        "hard": {
+          "base": [
+            2.6,
+            1.7,
+            3.4
+          ],
+          "coord": [
+            5.0,
+            2.9,
+            7.1
+          ],
+          "total": [
+            3.6,
+            2.3,
+            4.8
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-18",
+        "medium": "2026-04-18",
+        "hard": "2026-04-19"
+      }
+    },
+    {
+      "id": "gemma-4-e4b-it",
+      "name": "Gemma 4 E4B",
+      "config": "instruct, efficient",
+      "type": "open-weight",
+      "family": "Gemma",
+      "params": "~4B",
+      "params_sort": 4,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            2.4,
+            1.9,
+            2.9
+          ],
+          "coord": [
+            4.6,
+            3.0,
+            6.3
+          ],
+          "total": [
+            3.3,
+            2.6,
+            4.1
+          ]
+        },
+        "medium": {
+          "base": [
+            2.4,
+            1.9,
+            2.8
+          ],
+          "coord": [
+            3.1,
+            1.7,
+            4.5
+          ],
+          "total": [
+            2.7,
+            2.0,
+            3.3
+          ]
+        },
+        "hard": {
+          "base": [
+            2.3,
+            1.9,
+            2.7
+          ],
+          "coord": [
+            3.2,
+            1.9,
+            4.5
+          ],
+          "total": [
+            2.7,
+            2.1,
+            3.3
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-18",
+        "medium": "2026-04-18",
+        "hard": "2026-04-19"
+      }
+    },
+    {
+      "id": "llama-3.3-70b-instruct",
+      "name": "Llama 3.3 70B",
+      "config": "instruct",
+      "type": "open-weight",
+      "family": "Llama",
+      "params": "70B dense",
+      "params_sort": 70,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            1.6,
+            1.1,
+            2.3
+          ],
+          "coord": [
+            5.0,
+            3.2,
+            6.8
+          ],
+          "total": [
+            3.1,
+            2.2,
+            4.0
+          ]
+        },
+        "medium": {
+          "base": [
+            1.1,
+            0.8,
+            1.5
+          ],
+          "coord": [
+            2.9,
+            1.4,
+            4.4
+          ],
+          "total": [
+            1.9,
+            1.3,
+            2.5
+          ]
+        },
+        "hard": {
+          "base": [
+            1.4,
+            1.1,
+            1.7
+          ],
+          "coord": [
+            4.2,
+            2.7,
+            5.8
+          ],
+          "total": [
+            2.6,
+            1.8,
+            3.3
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-19",
+        "medium": "2026-04-19",
+        "hard": "2026-04-19"
+      }
+    },
+    {
+      "id": "llama-3.1-8b-instruct",
+      "name": "Llama 3.1 8B",
+      "config": "instruct",
+      "type": "open-weight",
+      "family": "Llama",
+      "params": "8B dense",
+      "params_sort": 8,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            1.4,
+            1.1,
+            1.7
+          ],
+          "coord": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "total": [
+            0.8,
+            0.6,
+            1.0
+          ]
+        },
+        "medium": {
+          "base": [
+            1.4,
+            1.1,
+            1.6
+          ],
+          "coord": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "total": [
+            0.8,
+            0.6,
+            0.9
+          ]
+        },
+        "hard": {
+          "base": [
+            1.3,
+            1.0,
+            1.5
+          ],
+          "coord": [
+            0.3,
+            0.0,
+            0.9
+          ],
+          "total": [
+            0.9,
+            0.7,
+            1.2
+          ]
+        }
+      },
+      "harness_version": "robust_all_v0.1",
+      "eval_dates": {
+        "easy": "2026-04-18",
+        "medium": "2026-04-18",
+        "hard": "2026-04-19"
+      }
+    }
+  ],
+  "marl": [
+    {
+      "id": "marl-100m",
+      "name": "MARL (100M steps)",
+      "config": "best algo @ 100M env steps",
+      "type": "marl",
+      "family": "MARL",
+      "params": "25M params",
+      "params_sort": 0,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            11.6,
+            11.1,
+            12.1
+          ],
+          "coord": [
+            20.0,
+            19.0,
+            21.4
+          ],
+          "total": [
+            15.1,
+            14.6,
+            15.6
+          ]
+        },
+        "medium": {
+          "base": [
+            12.1,
+            11.5,
+            12.8
+          ],
+          "coord": [
+            17.0,
+            16.2,
+            18.0
+          ],
+          "total": [
+            14.2,
+            13.5,
+            15.0
+          ]
+        },
+        "hard": {
+          "base": [
+            12.2,
+            11.6,
+            12.8
+          ],
+          "coord": [
+            5.6,
+            5.1,
+            6.2
+          ],
+          "total": [
+            9.4,
+            8.9,
+            9.9
+          ]
+        }
+      },
+      "harness_version": "marl_ref_v0.1",
+      "eval_dates": {
+        "easy": "2026-06",
+        "medium": "2026-06",
+        "hard": "2026-06"
+      }
+    },
+    {
+      "id": "marl-1b",
+      "name": "MARL (1B steps)",
+      "config": "best algo @ 1B env steps",
+      "type": "marl",
+      "family": "MARL",
+      "params": "25M params",
+      "params_sort": 0,
+      "verified": true,
+      "scores": {
+        "easy": {
+          "base": [
+            21.0,
+            19.4,
+            22.6
+          ],
+          "coord": [
+            22.0,
+            20.8,
+            23.1
+          ],
+          "total": [
+            21.4,
+            20.9,
+            21.9
+          ]
+        },
+        "medium": {
+          "base": [
+            20.1,
+            19.6,
+            20.7
+          ],
+          "coord": [
+            19.8,
+            19.4,
+            20.2
+          ],
+          "total": [
+            19.9,
+            19.5,
+            20.5
+          ]
+        },
+        "hard": {
+          "base": [
+            13.6,
+            12.8,
+            14.2
+          ],
+          "coord": [
+            17.6,
+            16.9,
+            18.2
+          ],
+          "total": [
+            15.3,
+            14.9,
+            15.7
+          ]
+        }
+      },
+      "harness_version": "marl_ref_v0.1",
+      "eval_dates": {
+        "easy": "2026-06",
+        "medium": "2026-06",
+        "hard": "2026-06"
+      }
+    }
+  ],
+  "averages": {
+    "easy": {
+      "base": 5.7,
+      "coord": 6.6,
+      "total": 6.1
+    },
+    "medium": {
+      "base": 5.5,
+      "coord": 7.0,
+      "total": 6.1
+    },
+    "hard": {
+      "base": 5.6,
+      "coord": 6.9,
+      "total": 6.2
+    }
+  },
+  "heterogeneous": {
+    "note": "Heterogeneous teams (Hard). Mixed teams perform near the average of their homogeneous baselines \u2014 they do not collapse to the weakest member nor inherit the strongest.",
+    "teams": [
+      {
+        "id": "gemma-family",
+        "name": "Gemma family team",
+        "kind": "same-family",
+        "members": [
+          "Gemma 4 E4B",
+          "Gemma 4 26B-A4B",
+          "Gemma 4 31B"
+        ],
+        "team_total": 6.1,
+        "homog_avg": 6.0,
+        "delta": 0.1,
+        "member_totals": {
+          "Gemma 4 E4B": 2.7,
+          "Gemma 4 26B-A4B": 7.4,
+          "Gemma 4 31B": 8.0
+        }
+      },
+      {
+        "id": "cross-family",
+        "name": "Cross-family team",
+        "kind": "cross-family",
+        "members": [
+          "Gemini 3.1 Pro",
+          "GPT-5.4",
+          "Gemma 4 31B"
+        ],
+        "team_total": 10.6,
+        "homog_avg": 10.7,
+        "delta": -0.1,
+        "member_totals": {
+          "Gemini 3.1 Pro": 15.4,
+          "GPT-5.4": 8.6,
+          "Gemma 4 31B": 8.0
+        }
+      }
+    ]
+  }
+}

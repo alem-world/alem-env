@@ -11,20 +11,24 @@
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
   <a href="https://arxiv.org/abs/2606.08340"><img alt="arXiv:2606.08340" src="https://img.shields.io/badge/arXiv-2606.08340-b31b1b.svg" /></a>
   <a href="https://huggingface.co/alem-world/alem-rl-baselines"><img alt="Hugging Face Models" src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-ffce1c.svg" /></a>
+  <a href="https://alem-world.github.io/"><img alt="Website" src="https://img.shields.io/badge/website-alem--world.github.io-111111.svg" /></a>
 </p>
 
+<h3 align="center">Can LLM agents coordinate in long-horizon, open-ended tasks?</h3>
+
 <p align="center">
-  <b><a href="https://alem-world.github.io/leaderboard">🏆 Leaderboard</a></b> · <a href="https://arxiv.org/abs/2606.08340">📄 Paper</a> · <a href="https://huggingface.co/alem-world/alem-rl-baselines">🤗 Models</a>
-  <!-- TODO: replace the leaderboard URL with the real reference-website link once it is live. -->
+  <a href="https://alem-world.github.io/">🌐 Website</a> · <b><a href="https://alem-world.github.io/leaderboard.html">🏆 Leaderboard</a></b> · <b><a href="#evaluate-an-llm">⚡ Evaluate an LLM</a></b> · <a href="SUBMISSION.md">Submit a result</a> · <a href="https://arxiv.org/abs/2606.08340">📄 Paper</a> · <a href="https://huggingface.co/alem-world/alem-rl-baselines">🤗 Models</a>
 </p>
 
 *Alem* is a JAX benchmark for open-ended multi-agent coordination. Building on [Craftax](https://github.com/MichaelTMatthews/Craftax) and [Multi-Agent Craftax / Craftax-Coop](https://github.com/BaselOmari/MA-Craftax), *Alem* introduces procedurally generated coordination tasks, soft specialisation, communication, and controllable coordination difficulty into a long-horizon survival world with exploration, crafting, trading, and combat. The same world is exposed through symbolic, pixel, and text interfaces, making it usable by MARL agents, language agents, and humans.
 
 *Alem* means *world* in Amharic.
 
+<p align="center"><sub><b>93</b> achievements&nbsp;·&nbsp;<b>27</b> coordination goals&nbsp;·&nbsp;<b>3</b> difficulty tiers&nbsp;·&nbsp;<b>9</b> dungeon levels&nbsp;·&nbsp;episodes up to <b>10,000</b> steps&nbsp;·&nbsp;pure JAX</sub></p>
+
 ## Contents
 
-[RL Playing](#rl-agents-playing) · [LLM Playing](#llm-agents-playing) · [Install](#install) · [Quick Start](#quick-start) · [Configure](#configure) · [RL Agents](#rl-agents) · [LLM Agents](#llm-agents) · [Baselines](#baselines) · [Human Play](#human-play) · [Docker](#docker) · [Package Layout](#package-layout) · [Development](#development) · [RL vs LLM Interfaces](#rl-vs-llm-interfaces) · [Reproduce the Paper](#reproduce-the-paper) · [Contributing](#contributing) · [Citation](#citation) · [License](#license)
+[RL Playing](#rl-agents-playing) · [LLM Playing](#llm-agents-playing) · [Install](#install) · [Quick Start](#quick-start) · [**Evaluate an LLM**](#evaluate-an-llm) · [Configure](#configure) · [RL Agents](#rl-agents) · [Baselines](#baselines) · [Human Play](#human-play) · [Docker](#docker) · [Package Layout](#package-layout) · [Development](#development) · [RL vs LLM Interfaces](#rl-vs-llm-interfaces) · [Reproduce the Paper](#reproduce-the-paper) · [Submit to the Leaderboard](#submit-to-the-leaderboard) · [Contributing](#contributing) · [Citation](#citation) · [License](#license)
 
 ## RL Agents Playing
 
@@ -34,25 +38,25 @@ A team of MARL agents controlling the three players from symbolic observations, 
   <img src="images/sample_agents_playing.gif" alt="RL agents playing Alem" width="760" />
 </p>
 
-Fast to train end-to-end in JAX. Full MARL training code and reference baselines live in [`baselines/`](baselines) — see [Baselines](#baselines).
+Fast to train end-to-end in JAX. Full MARL training code and reference baselines live in [`baselines/`](baselines); see [Baselines](#baselines).
 
 ## LLM Agents Playing
 
 The same world through the text interface. Each agent gets its own observation, broadcasts a free-form message to teammates every step and stores important information in scratchpad memory.
 
 <p align="center">
-  <img src="images/llm_communication.gif" alt="LLM agents coordinating in Alem" width="820" />
+  <img src="images/llm_agents_playing.gif" alt="LLM agents reasoning and coordinating in Alem" width="820" />
 </p>
 
-<p align="center"><sub>Gemini 3.1 Pro (medium). <b>THINKING</b> = the agent's private plan; <b>MESSAGE</b> = what it broadcasts to the team.<br/><b>Each panel is held for several seconds so the reasoning is readable — this is not the agents' real decision speed.</b></sub></p>
+<p align="center"><sub>Gemini 3.1 Pro (medium). <b>THINKING</b> = the agent's private plan; <b>MESSAGE</b> = what it broadcasts to the team. The view follows whichever agent is speaking; reasoning is typed out for readability, not the agents' real decision speed.</sub></p>
 
-The warrior plans turns ahead **and predicts how a teammate will react** — then it happens:
+Three agents negotiate a synchronous action. They plan ahead, model each other, lock in a shared step, and then execute it together:
 
-- **Plans ahead.** A turn-indexed plan `T87→T95`, with a fallback for the warrior's crafting-penalty.
-- **Theory of mind.** *"A2 will get my message at T88, so they'll cancel their T90 action and wait for T95"* — and at T88, A2 does exactly that.
-- **Coordinates out loud.** Lines all three up for a synchronous mine to earn the *Coord Mine Stone Hard* bonus.
+- **Plans ahead.** Each agent commits to a turn-indexed plan (`Step 5 Move · Step 6–7 Noop · Step 8 DO`) and waits in position.
+- **Theory of mind.** A0 predicts a teammate's move will break the plan (*"A2, your Step-6 DO will fail because A1 changed to Step 8"*), and A1 catches the clash: *"A0 and A2 sent conflicting times — EVERYONE DO ON STEP 8!"*
+- **Coordinates out loud.** All three line up and DO the 3-agent tree on the same step.
 
-See [LLM Agents](#llm-agents) to run it yourself.
+See [Evaluate an LLM](#evaluate-an-llm) to run it yourself.
 
 <details>
 <summary><b>👁️ Click to see what the agents actually see</b></summary>
@@ -61,7 +65,7 @@ See [LLM Agents](#llm-agents) to run it yourself.
 
 Every step a language agent gets a **system prompt** (the rules, sent once) and a **text observation** (its current view), and must reply with an `<action>`, an optional `<communication>` broadcast, and an optional private `<scratchpad>`. We use **progressive disclosure**, where we only give relevant information for the current level in the prompt, and add information as agents get to more levels.
 
-**System prompt template** — placeholders in `{…}` are filled per agent/run (abridged; the full rules are sent verbatim):
+**System prompt template.** Placeholders in `{…}` are filled per agent/run (abridged; the full rules are sent verbatim):
 
 ```text
 You are Agent {id} ({role}) in a {num_agents}-agent cooperative survival game. Your goal is to gather resources, craft gear, fight monsters, and descend through {num_levels} dungeon levels, while coordinating with teammates. You must survive — if your health reaches zero, you die, and if all agents die the game ends. Maximize achievements while alive.
@@ -81,7 +85,7 @@ Token budget: {token_budget} tokens for the full response (including reasoning).
 
 **[View the full system prompt, filled in](SYSTEM_PROMPT.md)** (a concrete 3-agent example on overworld).
 
-**Observation template** — the structure every agent receives each step:
+**Observation template.** The structure every agent receives each step:
 
 ```text
 Step: {step}/{max_steps} ({steps_remaining} remaining, ends early if all agents die)
@@ -108,7 +112,7 @@ Your status: health {hp}, food {food}, drink {drink}, energy {energy}, mana {man
 Available actions: {legal_actions_this_step}
 ```
 
-**Filled-in example** — what the warrior actually sees at step 0:
+**Filled-in example.** What the warrior actually sees at step 0:
 
 ```text
 Step: 0/10000 (10000 remaining, ends early if all agents die)
@@ -143,15 +147,13 @@ Available actions: Noop, Move {West,East,North,South}, Do, Sleep, Rest, Request 
 ## Install
 
 ```bash
-pip install alem-env          # latest release from PyPI
+uv venv --python 3.12
+uv pip install alem-env # latest release from PyPI     
 ```
 
 Or from source for development (editable install):
 
 ```bash
-uv venv --python 3.12
-source .venv/bin/activate    # Linux / macOS
-# .venv\Scripts\activate     # Windows
 uv pip install -e .
 ```
 
@@ -173,8 +175,7 @@ pip install -e .
 pip install -e ".[gpu]"
 ```
 
-> **Running scripts with uv:** Commands below use `uv run python …`, which uses `.venv` without a prior `source activate` (activating once and calling `python …` also works). Note: it's `uv run python script.py` — `uv python script.py` is not valid.
-
+Or `pip install alem-env`.
 ## Quick Start
 
 ```python
@@ -201,6 +202,55 @@ Available environments:
 | `Alem-Coop-Pixels`          | Full multi-agent environment, pixel observations         |
 | `Alem-Coop-Symbolic-Debug`  | Smaller debug environment, only overworld (first floor). |
 | `Alem-SingleAgent-Symbolic` | Single-agent variant (experimental)                      |
+
+## Evaluate an LLM
+
+Alem is an **open leaderboard for multi-agent coordination**: evaluate any OpenAI-compatible model and [submit your score](https://alem-world.github.io/leaderboard.html). Three agents play as a team through the text interface: each reasons privately, broadcasts a message to teammates, and keeps a scratchpad.
+
+```bash
+uv pip install -e ".[baselines-llm]"   # the LLM evaluation harness
+```
+
+**Local model** (vLLM or any OpenAI-compatible server). The same `MODEL_ID` drives all three agents:
+
+```bash
+# Install vLLM in a SEPARATE env; it pins its own torch/CUDA build that clashes with this repo's jax
+uv venv --python 3.12 .venv-vllm
+source ~/.venv-vllm/bin/activate
+uv pip install vllm --torch-backend=auto
+
+# Terminal 1: serve your model
+vllm serve meta-llama/Llama-3.2-1B-Instruct --port 8000 
+
+# Terminal 2: evaluate a 3-agent team on all leaderboard difficulties (from this repo's main env)
+scripts/run_llm_eval.sh meta-llama/Llama-3.2-1B-Instruct \
+    --base-url http://localhost:8000/v1 --episodes 20 --difficulty easy,medium,hard
+```
+
+> Any OpenAI-compatible server works; vLLM is just the common choice for open models. See [vLLM install docs](https://docs.vllm.ai/en/stable/getting_started/installation.html) for GPU/CPU build options.
+
+**Hosted API** (OpenAI / Anthropic / Gemini / …):
+
+```bash
+export OPENAI_API_KEY=sk-...
+python baselines/llm/eval_alem.py \
+    clients.0.client_name=openai clients.1.client_name=openai clients.2.client_name=openai \
+    clients.0.model_id=gpt-4o-mini clients.1.model_id=gpt-4o-mini clients.2.model_id=gpt-4o-mini \
+    eval.num_episodes.alem=20
+```
+
+Swap `client_name` to `anthropic`, `gemini`, `nvidia`, or `xai` (and set the matching API key). Runs use the default `robust_all` agent + `specific_collaborative` prompt, the paper setup.
+
+**Try it before spending tokens.** Run a cheap 5-step smoke test, or preview the text observations with no model at all:
+
+```bash
+scripts/smoke_llm.sh meta-llama/Llama-3.2-1B-Instruct --base-url http://localhost:8000/v1 --steps 5 --coord easy
+uv run python examples/llm_text_smoke.py --coord easy --show-affordances   # no model calls
+```
+
+**Prefer Docker?** A single `docker run` serves your model with vLLM *and* runs the 3-agent eval, with no local install. See [Docker → Evaluate an LLM](#evaluate-an-llm-in-one-command).
+
+→ **Full harness reference**: agent types, prompt modes, providers, per-agent configs, and metrics: [`baselines/llm/README.md`](baselines/llm/README.md). To publish a result: [`SUBMISSION.md`](SUBMISSION.md).
 
 ## Configure
 
@@ -232,108 +282,26 @@ uv run python examples/random_rl_agent.py --coord easy --steps 100
 uv run python examples/random_rl_agent.py --players 2 --coord hard --steps 200
 ```
 
-The example uses a jitted `lax.scan` loop and can serve as a template for custom policies. Full MARL training recipes (IPPO, HyperMARL-IPPO, MAPPO, PQN-VDN) live in [`baselines/`](baselines) — see [Baselines](#baselines).
-
-## LLM Agents
-
-Preview 3-agent text observations without any model calls:
-
-```bash
-uv run python examples/llm_text_smoke.py --coord easy --show-affordances
-```
-
-Run one 3-agent step with any OpenAI-compatible model:
-
-```bash
-export OPENAI_API_KEY=sk-...
-uv run python examples/llm_openai_smoke.py --model gpt-4o-mini --steps 1
-```
-
-Local vLLM server:
-
-```bash
-uv run python examples/llm_openai_smoke.py \
-    --base-url http://localhost:8000/v1 \
-    --api-key EMPTY \
-    --model meta-llama/Llama-3.2-1B-Instruct \
-    --steps 1
-```
-
-Full LLM evaluation runners live in [`baselines/llm/`](baselines/llm) — see [Baselines](#baselines).
+The example uses a jitted `lax.scan` loop and can serve as a template for custom policies. Full MARL training recipes (IPPO, HyperMARL-IPPO, MAPPO, PQN-VDN) live in [`baselines/`](baselines); see [Baselines](#baselines).
 
 ## Baselines
 
-Reference MARL training code and the LLM-agent evaluation harness live in this repo under [`baselines/`](baselines). Following the [CleanRL](https://github.com/vwxyzjn/cleanrl) philosophy — and [JaxMARL](https://github.com/FLAIROx/JaxMARL), which these are adapted from — each RL algorithm is a single self-contained file with a matching [Hydra](https://hydra.cc) config in `baselines/config/`.
-
-Install only the set you need:
+Reference MARL training code and the LLM-agent evaluation harness live under [`baselines/`](baselines). Each RL algorithm is a single self-contained file (CleanRL-style) with a matching [Hydra](https://hydra.cc) config; the LLM harness (derived from [BALROG](https://github.com/balrog-ai/BALROG)) drives 3 language agents through the text interface.
 
 ```bash
 uv pip install -e ".[baselines-rl]"    # JAX MARL trainers (IPPO / MAPPO / PQN-VDN / HyperMARL)
 uv pip install -e ".[baselines-llm]"   # LLM-agent evaluation harness
 ```
 
-### RL training
-
-| Algorithm                       | Entry point                       | Reference                                              |
-| ------------------------------- | --------------------------------- | ------------------------------------------------------ |
-| IPPO (RNN, shared params)       | `baselines/ippo_rnn.py`           | [IPPO](https://arxiv.org/abs/2011.09533)    |
-| IPPO (RNN, no param sharing)    | `baselines/ippo_rnn_nops.py`      | [IPPO](https://arxiv.org/abs/2011.09533)    |
-| HyperMARL-IPPO (RNN)            | `baselines/ippo_hypermarl_rnn.py` | [HyperMARL](https://arxiv.org/abs/2412.04233) ([code](https://github.com/KaleabTessera/HyperMARL)) |
-| MAPPO (RNN)                     | `baselines/mappo_rnn.py`          | [MAPPO](https://arxiv.org/abs/2103.01955)    |
-| PQN-VDN (RNN)                   | `baselines/pqn_vdn_rnn.py`        | [PQN](https://arxiv.org/abs/2407.04811) ([code](https://github.com/mttga/purejaxql))  |
-
-Run the baselines from the `baselines/` directory and override config values on the command line:
+| Guide | What's inside |
+| ----- | ------------- |
+| [**RL baselines →** `baselines/README.md`](baselines/README.md) | IPPO / HyperMARL-IPPO / MAPPO / PQN-VDN trainers, run commands, and reloading the [pretrained checkpoints](https://huggingface.co/alem-world/alem-rl-baselines) from the paper. |
+| [**LLM harness →** `baselines/llm/README.md`](baselines/llm/README.md) | Agent types, prompt modes, providers (vLLM / OpenAI / Anthropic / Gemini), configuration, and metrics. |
 
 ```bash
-cd baselines
-python ippo_rnn.py
-python mappo_rnn.py coordination_difficulty=hard   # override any config value
-```
-
-### Running stored policies
-
-Pretrained RL checkpoints from the paper are on the Hugging Face Hub at
-[**alem-world/alem-rl-baselines**](https://huggingface.co/alem-world/alem-rl-baselines):
-120 checkpoints = 2 training budgets (`100M`, `1B` env steps) × 4 algorithms × 3
-difficulties × 5 seeds, laid out as `<budget>/<algorithm>/<difficulty>/seed<N>/`.
-
-Each trainer can skip training and instead restore a saved checkpoint, then run the
-same final evaluation (and visualization) used after training. Download the checkpoints,
-then pass `LOAD_CHECKPOINT` pointing at the checkpoint directory:
-
-```bash
-# 1. Download the checkpoints (needs: pip install -U huggingface_hub)
-hf download alem-world/alem-rl-baselines --local-dir alem-rl-baselines
-
-# 2. Reload and evaluate an IPPO policy (note NUM_COMM_CHANNELS=4)
-cd baselines
-python ippo_rnn.py \
-    +LOAD_CHECKPOINT=../alem-rl-baselines/1B/ippo-rnn/hard/seed0/checkpoint \
-    NUM_COMM_CHANNELS=4 \
-    EVAL_DIFFICULTIES=[hard] \
-    +VISUALIZE=True
-```
-
-Gifs are saved in `./outputs/`, set `VISUALIZE=False` to skip rendering and only run the numeric evaluation.
-
-> **Important — the config must match how the checkpoint was trained.** Checkpoint 
-> shapes are fixed at training time, so the env config (number of agents, communication
-> channels, etc.) must match or the restore will fail with a shape mismatch. The released
-> checkpoints were all trained with **4 communication channels**, so load them with
-> `NUM_COMM_CHANNELS=4`. The exact overrides for any checkpoint are stored under
-> `reload_overrides` in its `config.json`.
-
-### LLM-agent evaluation
-
-The harness (derived from [BALROG](https://github.com/balrog-ai/BALROG)) drives 3 language agents through the text interface and supports vLLM, OpenAI, Anthropic, Gemini, and other OpenAI-compatible providers. See [`baselines/llm/README.md`](baselines/llm/README.md) for full launch commands and configuration.
-
-```bash
-cd baselines/llm
-export OPENAI_API_KEY=sk-...
-python eval_alem.py \
-    clients.0.client_name=openai \
-    clients.1.client_name=openai \
-    clients.2.client_name=openai
+cd baselines && python ippo_rnn.py TOTAL_TIMESTEPS=10000           # train an RL policy
+cd baselines/llm && python eval_alem.py clients.0.client_name=openai \
+    clients.1.client_name=openai clients.2.client_name=openai      # evaluate an LLM team
 ```
 
 ## Human Play
@@ -364,41 +332,64 @@ The game advances after all players have chosen an action.
 
 ## Docker
 
-**Build:**
+Three images, each built from the repo root. Two of them run a full benchmark job in a **single `docker run`**; the container installs nothing and starts working immediately:
+
+| Image | Dockerfile | What one `docker run` does |
+| ----- | ---------- | -------------------------- |
+| `alem-llm` | `docker/Dockerfile.llm` | Serves your model with vLLM **and** runs a 3-agent LLM evaluation against it |
+| `alem-rl`  | `docker/Dockerfile.rl`  | Runs a JAX MARL trainer (IPPO / MAPPO / PQN-VDN / HyperMARL) |
+| `alem-env` | `docker/Dockerfile.env` | Lightweight environment-only image for the examples / your own code |
+
+Both `alem-llm` and `alem-rl` need [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) on the host and `--gpus` at runtime.
+
+### Evaluate an LLM in one command
+
+```bash
+docker build -f docker/Dockerfile.llm -t alem-llm .
+
+# Serves the model with vLLM, waits until ready, then evaluates a 3-agent team.
+# Only MODEL_ID is required; mount the HF cache so models are downloaded once.
+docker run --rm --gpus all --shm-size=16g \
+    -e MODEL_ID=meta-llama/Llama-3.2-1B-Instruct \
+    -e HF_TOKEN=$HF_TOKEN \
+    -v ~/.cache/huggingface:/app/.cache/huggingface \
+    alem-llm eval.num_episodes.alem=5
+```
+
+Trailing arguments are Hydra overrides for the eval (e.g. `eval.num_episodes.alem=5`, `alem.coordination_difficulty=hard`). For a large model, shard across GPUs with `-e VLLM_EXTRA_ARGS="--tensor-parallel-size 4"` and a bigger `--shm-size`. To log to W&B, pass `-e WANDB_API_KEY=... -e WANDB_MODE=online`. Full knobs are in the header of [`docker/Dockerfile.llm`](docker/Dockerfile.llm).
+
+### Train an RL policy in one command
+
+```bash
+docker build -f docker/Dockerfile.rl -t alem-rl .
+
+docker run --rm --gpus all -v "$PWD/outputs:/app/outputs" \
+    alem-rl ippo_rnn TOTAL_TIMESTEPS=1e4 NUM_ENVS=16 SEED=0
+```
+
+The first argument is the trainer (`ippo_rnn`, `ippo_rnn_nops`, `ippo_hypermarl_rnn`, `mappo_rnn`, `pqn_vdn_rnn`); the rest are Hydra overrides. Run with no arguments to list the available trainers. Checkpoints and GIFs land in the mounted `outputs/`.
+
+### Environment-only image
 
 ```bash
 # CPU (default)
 docker build -f docker/Dockerfile.env -t alem-env .
 
-# GPU — NVIDIA CUDA 12
+# GPU: NVIDIA CUDA 12
 docker build -f docker/Dockerfile.env --build-arg ALEM_ACCELERATOR=cuda12 -t alem-env:gpu .
-
-# With optional extras (e.g. LLM + play)
-docker build -f docker/Dockerfile.env --build-arg ALEM_EXTRAS=llm,play -t alem-env:extras .
 ```
 
-**Run:**
-
-The image uses the system Python (`UV_SYSTEM_PYTHON=1`), so inside a container you call `python` directly — no `uv run` prefix needed.
+The image uses the system Python (`UV_SYSTEM_PYTHON=1`), so inside a container you call `python` directly, no `uv run` prefix needed.
 
 ```bash
-# Smoke test — confirms the install works (default CMD)
-docker run --rm alem-env
-docker run --rm --gpus all alem-env:gpu
-
-# Run examples
+docker run --rm alem-env                                           # smoke test (default CMD)
+docker run --rm --gpus all alem-env:gpu                            # GPU smoke test
 docker run --rm alem-env python examples/random_rl_agent.py --steps 20
 docker run --rm alem-env python examples/llm_text_smoke.py --coord easy
-
-# LLM smoke test (pass your API key)
-docker run --rm -e OPENAI_API_KEY=$OPENAI_API_KEY alem-env:extras \
-    python examples/llm_openai_smoke.py --model gpt-4o-mini --steps 1
-
-# Interactive shell
-docker run --rm -it alem-env bash
+docker run --rm -it alem-env bash                                  # interactive shell
 ```
 
-> **Human play is easiest natively** — `uv pip install -e ".[play]"` then `uv run python examples/play_alem.py`. Pygame opens a real window with no display plumbing.
+> **Human play is easiest natively**: `uv pip install -e ".[play]"` then `uv run python examples/play_alem.py`. Pygame opens a real window with no display plumbing.
 
 <details>
 <summary><b>Running human play inside Docker (X11 setup)</b></summary>
@@ -426,7 +417,7 @@ docker build -f docker/Dockerfile.env --build-arg ALEM_EXTRAS=play -t alem-env:p
 ## Package Layout
 
 <details>
-<summary><b>Repository map — where each piece lives</b></summary>
+<summary><b>Repository map: where each piece lives</b></summary>
 
 <br>
 
@@ -477,14 +468,14 @@ uv run ruff format .         # format the code
 
 ## RL vs LLM Interfaces
 
-Both interfaces drive the **same** environment but are **not directly comparable** -- treat cross-paradigm scores as indicative, not head-to-head.
+Both interfaces drive the **same** environment but are **not directly comparable**; treat cross-paradigm scores as indicative, not head-to-head.
 
 |                     | MARL (symbolic)                                          | LLM (text)                                                                        |
 | ------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | **Observation**     | Numeric vector                                           | Natural-language text                                                             |
 | **Communication**   | A discrete signal on one of `num_comm_channels` (e.g. 4) | Free-form text, ≤ 400 chars                                                       |
 | **Comms vs acting** | Costs your action that turn                              | Sent alongside the action                                                         |
-| **Memory**          | Recurrent hidden state                                   | Private `<scratchpad>` notes — not shared; the agent's only memory across steps.  |
+| **Memory**          | Recurrent hidden state                                   | Private `<scratchpad>` notes: not shared; the agent's only memory across steps.  |
 | **Learning**        | Trained from reward                                      | Zero-shot                                                                         |
 
 (`Request`/`Give` resource transfers are ordinary actions in both.)
@@ -493,13 +484,25 @@ Text observations apply lightweight preprocessing, including compact local-state
 
 ## Reproduce the Paper
 
-The full experiments from the paper — the 13-LLM evaluation and the RL baselines (IPPO, HyperMARL-IPPO, MAPPO, PQN-VDN) — live in [`baselines/`](baselines); see [Baselines](#baselines) for launch commands and configs.
+The paper's full experiments (the 13-LLM evaluation and the IPPO, HyperMARL-IPPO, MAPPO, PQN-VDN baselines) live in [`baselines/`](baselines); see [Baselines](#baselines) for launch commands and configs.
 
-The paper's numbers were produced against *Alem* [`v0.1.0`](https://github.com/alem-world/alem-env/releases/tag/v0.1.0). For the exact settings to use when reporting an Alem number — seeds, episode count, metrics — see the canonical [evaluation protocol](EVALUATION.md).
+The paper's numbers were produced against *Alem* [`v0.1.0`](https://github.com/alem-world/alem-env/releases/tag/v0.1.0). For the exact settings to use when reporting an Alem number (seeds, episode count, metrics), see the canonical [evaluation protocol](EVALUATION.md).
+
+## Submit to the Leaderboard
+
+Alem is an open benchmark. To add an LLM agent, MARL policy, or custom harness result to the [leaderboard](https://alem-world.github.io/leaderboard.html), follow [`SUBMISSION.md`](SUBMISSION.md).
+
+If your model is behind an OpenAI-compatible endpoint such as vLLM, the LLM path is one command:
+
+```bash
+scripts/run_llm_eval.sh YOUR_MODEL_ID --base-url http://localhost:8000/v1 --episodes 20 --difficulty easy,medium,hard
+```
+
+Use `scripts/smoke_llm.sh YOUR_MODEL_ID --base-url http://localhost:8000/v1 --steps 5 --coord easy` first for a cheap smoke test. Submissions should include enough detail to reproduce the run: model or algorithm, harness, coordination difficulty, seeds, metrics, evaluation date, and any non-default config. Pull requests are preferred, but issues and email submissions are also accepted.
 
 ## Contributing
 
-Contributions are welcome — new baselines, bug fixes, docs, and coordination tasks. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the dev setup, lint/test workflow, and PR checklist, and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for community expectations. To put a result on the [leaderboard](https://alem-world.github.io/leaderboard), follow the submission instructions there.
+Contributions are welcome: new baselines, bug fixes, docs, and coordination tasks. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the dev setup, lint/test workflow, and PR checklist, and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for community expectations.
 
 ## Citation
 

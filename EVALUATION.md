@@ -78,7 +78,4 @@ python ippo_rnn.py TRAINING_COORDINATION_DIFFICULTY=hard EVAL_DIFFICULTIES=[hard
 
 ## Submitting to the leaderboard
 
-To put a result on the [leaderboard](https://alem-world.github.io/leaderboard),
-follow the submission instructions there. Report the exact model/algorithm,
-coordination difficulty, the metrics above, and confirm you used the standard
-settings in this document.
+To put a result on the [leaderboard](https://alem-world.github.io/leaderboard), follow the step-by-step in [`SUBMISSION.md`](SUBMISSION.md). Report the exact model/algorithm, coordination difficulty, the metrics above, and confirm you used the standard settings in this document.
