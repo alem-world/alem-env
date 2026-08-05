@@ -34,7 +34,10 @@ from .alem_symbolic_env import AlemCoopSymbolicEnv
 
 
 def generate_world_single_level(
-    rng: chex.PRNGKey, params: EnvParams, static_params: StaticEnvParams
+    rng: chex.PRNGKey,
+    params: EnvParams,
+    static_params: StaticEnvParams,
+    world_gen_fn=None,
 ) -> EnvState:
     """Generate a debug world containing only the overworld.
 
@@ -42,6 +45,9 @@ def generate_world_single_level(
         rng: JAX random key used for procedural generation.
         params: Dynamic gameplay and generation parameters.
         static_params: Static map, player, and entity parameters.
+        world_gen_fn: Optional replacement for ``generate_smoothworld`` with the
+            same signature and return values. Lets custom scenarios use handcrafted
+            maps (e.g. sizes too small for the noise-based generator).
 
     Returns:
         Fully initialized single-level environment state.
@@ -66,8 +72,10 @@ def generate_world_single_level(
     player_specializations = player_specialization_order[jnp.arange(static_params.player_count) % 3]
 
     # Generate only the overworld
+    if world_gen_fn is None:
+        world_gen_fn = generate_smoothworld
     rng, _rng = jax.random.split(rng)
-    map, item_map, light_map, ladders_down, ladders_up = generate_smoothworld(
+    map, item_map, light_map, ladders_down, ladders_up = world_gen_fn(
         _rng, static_params, player_position, OVERWORLD_CONFIG
     )
 
