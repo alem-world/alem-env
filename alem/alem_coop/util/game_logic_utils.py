@@ -84,7 +84,12 @@ def has_beaten_boss(state, static_params):
     Returns:
         Scalar boolean indicating campaign completion.
     """
-    return state.boss_progress >= static_params.num_levels - 1
+    # Single-level envs have no boss: without the num_levels > 1 guard,
+    # boss_progress (0) >= num_levels - 1 (0) is instantly true, spuriously
+    # awarding DEFEAT_NECROMANCER on the first step (mirrors is_fighting_boss).
+    return jnp.logical_and(
+        state.boss_progress >= static_params.num_levels - 1, static_params.num_levels > 1
+    )
 
 
 def attack_mob_class(
