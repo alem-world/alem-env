@@ -3,6 +3,7 @@ Language Wrapper for Alem-Coop Environment (alem)
 Converts symbolic observations to text descriptions for LLM agents.
 """
 
+import importlib
 import logging
 import re
 
@@ -56,6 +57,13 @@ def make_alem_env(config):
     All EnvParams are set explicitly so that text, symbolic, and pixel
     interfaces evaluate the same underlying environment configuration.
 
+    ``ENV_NAME`` accepts either a registered name (``Alem-Coop-Symbolic``, ...)
+    or a dotted import path ``module.path:ClassName`` pointing at any env class
+    with the standard ``(num_agents, env_params, static_env_params,
+    compute_full_info)`` constructor. Custom classes build their own static
+    params from ``num_agents``, so external scenario repos can plug into the
+    eval harness without registering anything inside ALEM.
+
     Args:
         config: Configuration dict with env params
 
@@ -92,6 +100,17 @@ def make_alem_env(config):
         env_name = "Alem-Coop-Symbolic-Debug"
     elif env_name == "Alem-Coop-Pixels":
         env_name = "Alem-Coop-Pixels"
+    elif ":" in env_name:
+        # Dotted import path to a custom env class, e.g. "one_task_env:SimpleOneTaskEnv".
+        # The class builds its own static params (map size, level count) from
+        # num_agents, so external scenario repos need no registration here.
+        module_name, class_name = env_name.split(":", 1)
+        env_cls = getattr(importlib.import_module(module_name), class_name)
+        cls_kwargs = {"env_params": env_params}
+        if num_agents is not None:
+            cls_kwargs["num_agents"] = num_agents
+        return env_cls(**cls_kwargs)
+
     env = make_alem_env_from_name(
         env_name, env_params=env_params, static_env_params=static_env_params
     )
