@@ -21,6 +21,10 @@ agent:
   remember_cot: true
   max_text_history: 8
   max_image_history: 0  # 0 = text-only, >=1 = VLM mode
+  # Size of the frame sent to the model, [width, height].
+  # if max_image_history>0. null = send the render as-is (GIFs keep it either way).
+  # Shrinking might save nothing: some models (e.g. Gemma) encodes to a fixed budget.
+  image_size: null
   max_cot_history: 1
   max_icl_history: 1000
   cache_icl: false
@@ -139,6 +143,11 @@ alem:
     render_downscale: 2     # set to 2 when using pixel_size=64 to match RL GIF quality
     llm_mode: "easy"  # Deprecated. Use agent.prompt_mode instead. Kept for backward compatibility.
     use_ascii: false  # true: replace "You see:" text list with a 9×11 ASCII grid
+    # true: drop the "You see:" text list entirely so a VLM agent reads the local
+    # view off the rendered frame. Facing/Do target, coordination cues, status and
+    # inventory stay as text. Requires agent.max_image_history >= 1; not compatible
+    # with use_ascii.
+    use_image_scene: false
 
 WANDB_MODE: "offline"  # Set to "online" to enable W&B logging, or "offline" to disable
 wandb:
