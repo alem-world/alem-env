@@ -1,9 +1,9 @@
 # Handle both relative and absolute imports
 try:
-    from ..client import create_llm_client
+    from ..client import CredentialError, create_llm_client
     from ..prompt_builder import create_prompt_builder
 except ImportError:
-    from eval_utils.client import create_llm_client
+    from eval_utils.client import CredentialError, create_llm_client
     from eval_utils.prompt_builder import create_prompt_builder
 
 from .chain_of_thought import ChainOfThoughtAgent
@@ -101,6 +101,39 @@ class AgentFactory:
             overrides["generate_kwargs"] = {**shared_gkw, **per_agent_gkw}  # per-agent wins
             client_cfg = OmegaConf.merge(client_cfg, overrides)
         return client_cfg
+
+    # Agent types that never call an LLM, so have nothing to authenticate.
+    CLIENTLESS_AGENT_TYPES = {"random"}
+
+    def preflight_clients(self):
+        """Check every client this run will use, before the run starts.
+
+        Credentials fail late and quietly today: the OpenAI and Claude wrappers
+        raise on the first step, and the Gemini wrapper returns an empty
+        completion that the agent parses as a Noop — so a run with one bad key
+        keeps going to the last step of the last episode, paying for the other
+        agents' calls the whole way.
+
+        Raises CredentialError listing every client that failed, so a run is not
+        fixed one key per failed run.
+        """
+        if self.config.agent.type in self.CLIENTLESS_AGENT_TYPES:
+            return
+
+        num_agents = int(self.config.alem.get("num_agents", len(self.config.clients)))
+        failures = []
+        for agent_idx in range(min(num_agents, len(self.config.clients))):
+            client_config = self._get_client_config_for_agent(agent_idx)
+            try:
+                create_llm_client(client_config)().validate_credentials()
+            except Exception as e:
+                failures.append(f"  clients[{agent_idx}]: {e}")
+
+        if failures:
+            raise CredentialError(
+                "Client credentials failed preflight — refusing to start the run:\n"
+                + "\n".join(failures)
+            )
 
     def _resolve_enable_thinking(self):
         """Resolve the enable_thinking flag for the LLM client.
