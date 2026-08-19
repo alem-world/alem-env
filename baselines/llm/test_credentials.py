@@ -77,9 +77,8 @@ class TestAuthFailureStopsTheRun(unittest.TestCase):
         """
         wrapper, patched = _gemini_wrapper_raising(_AuthError("invalid api key"))
         with patched:
-            with self.assertRaises(Exception) as ctx:
+            with self.assertRaises(_AuthError):
                 wrapper.generate([Message(role="user", content="ping")])
-        self.assertNotIsInstance(ctx.exception, AssertionError)
 
     def test_transient_error_still_degrades_to_an_empty_completion(self):
         """The tolerance that exists for flaky backends must survive the fix.
