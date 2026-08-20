@@ -186,10 +186,7 @@ env = make_alem_env_from_name("Alem-Coop-Symbolic")
 obs, state = env.reset(jax.random.PRNGKey(0))
 
 rng_act = jax.random.split(jax.random.PRNGKey(1), env.num_agents)
-actions = {
-    agent: env.action_space(agent).sample(rng_act[i])
-    for i, agent in enumerate(env.agents)
-}
+actions = {agent: env.action_space(agent).sample(rng_act[i]) for i, agent in enumerate(env.agents)}
 
 obs, state, rewards, dones, infos = env.step(jax.random.PRNGKey(2), state, actions)
 ```
