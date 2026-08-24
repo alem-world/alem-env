@@ -46,11 +46,12 @@ def resolve_ladder_collision(
     """Move the up-ladders off the down-ladders when the two independent draws collided.
 
     `get_ladder_positions` samples a single anchor and lays the level's ladders in one row from
-    it, so the up-ladder draw either misses the down-ladders entirely or lands on top of them.
-    The up-ladders are written to the item map second, so a collision silently deletes the
-    down-ladders and seals the level: `change_floor` only permits DESCEND from a LADDER_DOWN
-    tile. Redrawing with the down-ladder span excluded repairs the level; levels that did not
-    collide keep the position they already drew, and are left bit-identical.
+    it, so the two draws can share a row and overlap on some or all of their tiles — anchors an
+    even distance apart overlap partially. The up-ladders are written to the item map second, so
+    an overlap deletes the down-ladders underneath it and the level loses that much of its way
+    down: `change_floor` only permits DESCEND from a LADDER_DOWN tile. Redrawing with the
+    down-ladder span excluded repairs the level; levels that did not collide keep the position
+    they already drew, and are left bit-identical.
 
     Args:
         rng: The same key the up-ladder draw used, so no extra randomness is consumed.
@@ -63,7 +64,9 @@ def resolve_ladder_collision(
             suffer the overwrite, so their draw is left alone.
 
     Returns:
-        Up-ladder coordinates guaranteed not to overlap the down-ladders.
+        Up-ladder coordinates clear of the down-ladders, except in the degenerate case where
+        excluding the down-ladder span leaves nowhere legal to put them, when the original
+        draw is kept in preference to placing no ladders at all.
     """
     collided = (ladders_down[None, :, :] == ladders_up[:, None, :]).all(-1).any()
     exclude = (
