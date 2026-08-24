@@ -81,6 +81,7 @@ Use these unless you state a deviation:
 - **Difficulties** — `easy`, `medium`, `hard`, reported **separately** (never averaged).
 - **Episodes** — 20 per difficulty (≥ 10 if cost-constrained), shared eval seeds (`EVAL_SEED=9999`).
 - **Metrics** — Base%, Coord.%, Total%, each with a 95% CI — all produced by `make_submission.py`.
+- **Alem version** — the `alem-env` version you evaluated on, e.g. `0.2.0` (`python -c "import alem; print(alem.__version__)"`).
 
 Change the harness, prompt mode, history, communication, scratchpad, or parsing? Say so — it's
 part of the submission.

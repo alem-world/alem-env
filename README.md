@@ -28,7 +28,7 @@
 
 ## Contents
 
-[RL Playing](#rl-agents-playing) · [LLM Playing](#llm-agents-playing) · [Install](#install) · [Quick Start](#quick-start) · [**Evaluate an LLM**](#evaluate-an-llm) · [Configure](#configure) · [RL Agents](#rl-agents) · [Baselines](#baselines) · [Human Play](#human-play) · [Docker](#docker) · [Package Layout](#package-layout) · [Development](#development) · [RL vs LLM Interfaces](#rl-vs-llm-interfaces) · [Reproduce the Paper](#reproduce-the-paper) · [Submit to the Leaderboard](#submit-to-the-leaderboard) · [Contributing](#contributing) · [Citation](#citation) · [License](#license)
+[RL Playing](#rl-agents-playing) · [LLM Playing](#llm-agents-playing) · [Install](#install) · [Quick Start](#quick-start) · [**Evaluate an LLM**](#evaluate-an-llm) · [Configure](#configure) · [RL Agents](#rl-agents) · [Baselines](#baselines) · [Human Play](#human-play) · [Docker](#docker) · [Package Layout](#package-layout) · [Development](#development) · [RL vs LLM Interfaces](#rl-vs-llm-interfaces) · [Reproduce the Paper](#reproduce-the-paper) · [Submit to the Leaderboard](#submit-to-the-leaderboard) · [Errata](#errata) · [Contributing](#contributing) · [Citation](#citation) · [License](#license)
 
 ## RL Agents Playing
 
@@ -496,6 +496,12 @@ scripts/run_llm_eval.sh YOUR_MODEL_ID --base-url http://localhost:8000/v1 --epis
 ```
 
 Use `scripts/smoke_llm.sh YOUR_MODEL_ID --base-url http://localhost:8000/v1 --steps 5 --coord easy` first for a cheap smoke test. Submissions should include enough detail to reproduce the run: model or algorithm, harness, coordination difficulty, seeds, metrics, evaluation date, and any non-default config. Pull requests are preferred, but issues and email submissions are also accepted.
+
+## Errata
+
+Fixes that change environment behaviour are listed here, so numbers produced on different versions can be compared with the difference in mind. Report an Alem number together with the version it was produced on.
+
+**Prior to v0.2.0 — ladder placement.** The up-ladder and down-ladder positions were drawn independently and never checked against each other, so they could share a row and the up-ladders would replace some of the down-ladders. Affected levels could have fewer ways down than intended. This should be a minor issue for most runs, but it does change generated worlds, so results from before and after the fix are not directly comparable.
 
 ## Contributing
 
