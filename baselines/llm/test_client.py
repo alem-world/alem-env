@@ -2,20 +2,19 @@
 
 These cover what `generate()` actually puts on the wire, using a stand-in
 client that records the kwargs instead of calling a backend.
+
+Run with:
+    python -m unittest baselines.llm.test_client
 """
 
 import json
-import os
-import sys
 import unittest
 from types import SimpleNamespace
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from omegaconf import OmegaConf
 
-from eval_utils.client import OpenAIWrapper  # noqa: E402
-from eval_utils.prompt_builder import Message  # noqa: E402
-from omegaconf import OmegaConf  # noqa: E402
+from baselines.llm.eval_utils.client import OpenAIWrapper
+from baselines.llm.eval_utils.prompt_builder import Message
 
 
 def _client_config(client_name="vllm", **generate_kwargs):
