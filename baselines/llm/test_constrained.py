@@ -11,21 +11,17 @@ Tests cover:
   paths still match on the real client name
 """
 
-import os
-import sys
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from omegaconf import OmegaConf
 
-from eval_utils.client import OpenAIWrapper, create_llm_client  # noqa: E402
-from eval_utils.constrained import (  # noqa: E402
+from baselines.llm.eval_utils.client import OpenAIWrapper, create_llm_client
+from baselines.llm.eval_utils.constrained import (
     VALID_ACTIONS,
     ConstrainedOpenAIWrapper,
     build_action_schema,
     json_to_tagged,
 )
-from omegaconf import OmegaConf  # noqa: E402
 
 
 def _client_config(client_name):
