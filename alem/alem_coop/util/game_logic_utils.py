@@ -1050,7 +1050,7 @@ def find_valid_ladder_areas(valid_ladder_map, player_count):
     return valid_areas
 
 
-def get_ladder_positions(rng, static_params, config, map):
+def get_ladder_positions(rng, static_params, config, map, exclude=None):
     """Sample a valid row of evenly spaced player ladders.
 
     Args:
@@ -1058,6 +1058,9 @@ def get_ladder_positions(rng, static_params, config, map):
         static_params: Static map dimensions and player count.
         config: Level configuration defining valid ladder terrain.
         map: Block identifiers for the generated level.
+        exclude: Optional boolean map of tiles the ladder span may not cover. Used to keep the
+            up-ladders off the down-ladders, which otherwise overwrite each other. Ignored if
+            every candidate span would be ruled out.
 
     Returns:
         One ladder coordinate per player.
@@ -1066,6 +1069,13 @@ def get_ladder_positions(rng, static_params, config, map):
     valid_ladder_down = find_valid_ladder_areas(
         valid_ladder_down, static_params.player_count
     ).flatten()
+    if exclude is not None:
+        restricted = (map == config.valid_ladder).astype(jnp.float32) * (
+            1.0 - exclude.astype(jnp.float32)
+        )
+        restricted = find_valid_ladder_areas(restricted, static_params.player_count).flatten()
+        # Only honour the exclusion if it leaves somewhere to put the ladders at all.
+        valid_ladder_down = jnp.where(restricted.sum() > 0, restricted, valid_ladder_down)
     ladder_index = jax.random.choice(
         rng,
         jnp.arange(static_params.map_size[0] * static_params.map_size[1]),
