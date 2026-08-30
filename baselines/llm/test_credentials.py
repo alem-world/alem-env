@@ -6,24 +6,21 @@ agent contributes nothing.
 """
 
 import os
-import sys
 import unittest
 from types import SimpleNamespace
 from unittest import mock
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from omegaconf import OmegaConf
 
-from eval_utils import client as client_module  # noqa: E402
-from eval_utils.agents import AgentFactory  # noqa: E402
-from eval_utils.client import (  # noqa: E402
+from baselines.llm.eval_utils import client as client_module
+from baselines.llm.eval_utils.agents import AgentFactory
+from baselines.llm.eval_utils.client import (
     ClaudeWrapper,
     CredentialError,
     GoogleGenerativeAIWrapper,
     OpenAIWrapper,
 )
-from eval_utils.prompt_builder import Message  # noqa: E402
-from omegaconf import OmegaConf  # noqa: E402
+from baselines.llm.eval_utils.prompt_builder import Message
 
 
 class _AuthError(Exception):
