@@ -38,6 +38,13 @@ SCORE_KEYS = {
     "total": "Team/reward_pct_of_max",
 }
 BOOTSTRAP_REPS = 10000  # rliable stratified-bootstrap resamples for the 95% CI
+# Seeded so a leaderboard entry is reproducible: re-running this on the same run
+# directory must yield the same interval, or a reviewer cannot check a number.
+# It also keeps arch >= 8 working -- rliable forwards random_state=None straight
+# into StratifiedBootstrap, and arch now treats an unrecognised kwarg as data:
+#   TypeError: Only NumPy arrays and pandas DataFrames and Series are supported
+#              in keyword arguments. Input `random_state` has type NoneType.
+BOOTSTRAP_SEED = 9999  # matches EVAL_SEED; no statistical significance
 
 
 def _pretty(entry: dict) -> str:
@@ -114,7 +121,12 @@ def _bootstrap_ci(values: np.ndarray) -> list:
     rly = _load_rliable()
     scores = {"metric": arr[:, None]}
     aggregate_func = lambda x: np.array([np.mean(x)])  # noqa: E731
-    _, interval_estimates = rly.get_interval_estimates(scores, aggregate_func, reps=BOOTSTRAP_REPS)
+    _, interval_estimates = rly.get_interval_estimates(
+        scores,
+        aggregate_func,
+        reps=BOOTSTRAP_REPS,
+        random_state=np.random.RandomState(BOOTSTRAP_SEED),
+    )
     iv = np.asarray(interval_estimates["metric"], dtype=float)
     low, high = iv if iv.shape == (2,) else iv[:, 0]
     return [round(mean, 1), round(float(low), 1), round(float(high), 1)]
@@ -256,7 +268,7 @@ def main() -> int:
 
     # ── Report ───────────────────────────────────────────────────────────────
     print("\n" + "=" * 72)
-    print("LEADERBOARD ENTRY  (paste into the 'homogeneous' list of data/leaderboard.json)")
+    print("LEADERBOARD ENTRY  (paste into the 'homogeneous' list of the site repo's data/leaderboard.json)")
     print("=" * 72)
     print(_pretty(entry))
     print("=" * 72)
@@ -268,9 +280,10 @@ def main() -> int:
             "Re-run with --episodes 20 before submitting."
         )
     print(
-        "\nSubmit: open a PR adding the entry above to data/leaderboard.json and attach "
-        f"{os.path.basename(zip_path)},\n        or email it to k.tessera@ed.ac.uk. The videos "
-        "let us re-check and mark the entry ✓ verified."
+        "\nSubmit: open a PR on github.com/alem-world/alem-world.github.io adding the entry\n"
+        f"        above to data/leaderboard.json and attach {os.path.basename(zip_path)},\n"
+        "        or email it to kaleabtessera@gmail.com. The videos let us re-check and mark the\n"
+        "        entry ✓ verified."
     )
     return 0
 

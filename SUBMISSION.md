@@ -66,22 +66,27 @@ Repeat for `easy` and `medium`.
 
 ## Send it
 
-Open a PR **against this repo** adding the printed entry to
-[`data/leaderboard.json`](data/leaderboard.json) — the `homogeneous` list for LLM teams, or
-the `marl` list for the MARL track — and attach the `.zip`. Prefer not to PR? Email both to
-<k.tessera@ed.ac.uk>. The videos let us re-check the run and mark it ✓ verified. The
-[website](https://alem-world.github.io/leaderboard.html) renders from this file.
+Open a PR against the **site repo**,
+[alem-world/alem-world.github.io](https://github.com/alem-world/alem-world.github.io), adding the
+printed entry to [`data/leaderboard.json`](https://github.com/alem-world/alem-world.github.io/blob/main/data/leaderboard.json)
+(the `homogeneous` list for LLM teams, the `marl` list for the MARL track, or
+`heterogeneous.teams` for a mixed team) and attach the `.zip`. That file is what the
+[website](https://alem-world.github.io/leaderboard.html) renders, and it is the only copy; this
+repo deliberately does not keep one, so there is nothing to keep in sync.
+
+Prefer not to PR? Email both to <kaleabtessera@gmail.com>. The videos let us re-check the run and mark
+it ✓ verified.
 
 ## Standard submission (defaults)
 
 Use these unless you state a deviation:
 
-- **Harness** — `robust_all` (CoT, communication, scratchpad, reasoning all on).
-- **Team** — zero-shot, homogeneous, 3 agents.
-- **Difficulties** — `easy`, `medium`, `hard`, reported **separately** (never averaged).
-- **Episodes** — 20 per difficulty (≥ 10 if cost-constrained), shared eval seeds (`EVAL_SEED=9999`).
-- **Metrics** — Base%, Coord.%, Total%, each with a 95% CI — all produced by `make_submission.py`.
-- **Alem version** — the `alem-env` version you evaluated on, e.g. `0.2.0` (`python -c "import alem; print(alem.__version__)"`).
+- Harness `robust_all`, with CoT, communication, scratchpad and reasoning all on.
+- A zero-shot, homogeneous team of 3 agents.
+- All three difficulties, `easy`, `medium` and `hard`, reported **separately** and never averaged.
+- 20 episodes per difficulty (10 minimum if cost-constrained), on the shared eval seeds (`EVAL_SEED=9999`).
+- Base%, Coord.% and Total%, each with a 95% CI, all produced by `make_submission.py`.
+- The `alem-env` version you evaluated on, e.g. `0.2.0` (`python -c "import alem; print(alem.__version__)"`).
 
-Change the harness, prompt mode, history, communication, scratchpad, or parsing? Say so — it's
+Change the harness, prompt mode, history, communication, scratchpad, or parsing? Say so; it's
 part of the submission.

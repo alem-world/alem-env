@@ -219,6 +219,35 @@ python baselines/llm/eval_alem.py \
     agent.max_image_history=0 agent.max_text_history=16
 ```
 
+## Serving an open-weight model well
+
+The quick-start above serves a 1B model with defaults, which is fine for a smoke
+test. We have some instructions below for larger experiments.
+
+### Always enable prefix caching
+
+```bash
+vllm serve <model> --enable-prefix-caching ...
+```
+
+Alem's prompt is a long fixed system prompt plus a rolling history, and every
+agent re-sends a near-identical prefix on every step for hundreds of steps. With
+prefix caching almost all of that prefill becomes a cache hit. 
+
+### The reasoning parser must match, exactly
+
+`agent.reasoning=True` only makes sense when the server actually emits a separate
+reasoning field, which for vLLM means `--reasoning-parser <name>`.
+
+
+### Read `action_parse_rate` before you read the score
+
+`eval/action_parse_rate` is the first number to look at on any new model. A low
+value means the score is throttled by output formatting, not capability, and the
+fix is a serving flag, usually the chat template or the reasoning parser. Do a
+short run first and confirm the parse rate is high before spending a full
+evaluation on it.
+
 ## Docker (one-command eval)
 
 If you'd rather not install anything locally, the [`alem-llm`](../../docker/Dockerfile.llm)

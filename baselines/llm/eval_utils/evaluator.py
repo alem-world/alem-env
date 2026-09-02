@@ -218,6 +218,13 @@ class EvaluatorManager:
 
         self.env_names = config.envs.names.split("-")
         self.env_evaluators = {}
+        # Resume, and the only place it is implemented: an episode whose result
+        # JSON already exists is skipped rather than re-run. Combined with
+        # eval.resume_from (which points output_dir at an existing run) this
+        # means re-running an interrupted evaluation continues it instead of
+        # starting over -- which is what makes long runs survivable on batch
+        # schedulers with a walltime cap. A fully complete run exits in seconds.
+        # See EVALUATION.md -> Running at scale.
         self.tasks = []
         for env_name in self.env_names:
             evaluator = Evaluator(

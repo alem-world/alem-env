@@ -97,7 +97,15 @@ eval:
   num_episodes:
     alem: 20
 
-  num_workers: 4 # set to higher if you have resources and want faster eval
+  # Episodes run concurrently. Each episode has alem.num_agents agents in
+  # flight, so requests hitting your endpoint = num_workers * num_agents.
+  # This is a THROUGHPUT knob only: episode i always uses world seed
+  # EVAL_SEED + i, so changing it cannot change your numbers. Raising it is the
+  # biggest speedup available; what bounds it is your server's KV cache, not
+  # Alem. See EVALUATION.md -> Running at scale.
+  # For larger experiments set this to 20 (or num_episodes) so each eval
+  # runs in parallel. 
+  num_workers: 4
   max_steps_per_episode: 10000  # upper bound only — episodes end early when all agents die (typically ~300 steps)
 
   feedback_on_invalid_action: true
@@ -151,6 +159,8 @@ alem:
 
 WANDB_MODE: "offline"  # Set to "online" to enable W&B logging, or "offline" to disable
 wandb:
+  # Placeholder: set this (or override wandb.entity=) before running with
+  # WANDB_MODE=online, or wandb.init will fail on an entity that does not exist.
   entity: "<your-wandb-entity>"
   project: "alem"
   group: null
