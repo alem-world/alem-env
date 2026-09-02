@@ -268,7 +268,11 @@ def main() -> int:
 
     # ── Report ───────────────────────────────────────────────────────────────
     print("\n" + "=" * 72)
-    print("LEADERBOARD ENTRY  (paste into the 'homogeneous' list of the site repo's data/leaderboard.json)")
+    print(
+        ""
+        "LEADERBOARD ENTRY  (paste into the 'homogeneous' list of the site repo's data/leaderboard.json)"
+        ""
+    )
     print("=" * 72)
     print(_pretty(entry))
     print("=" * 72)
