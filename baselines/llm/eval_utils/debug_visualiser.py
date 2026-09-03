@@ -283,6 +283,7 @@ body { font-family: "SF Mono","Fira Code","Cascadia Code",monospace; background:
 .prompt-msg-role-assistant { color: var(--green); }
 .prompt-msg-role-system { color: var(--yellow); }
 .prompt-msg-content { white-space: pre-wrap; word-break: break-word; }
+.prompt-msg-thinking { opacity: 0.75; font-style: italic; white-space: pre-wrap; margin-bottom: 4px; }
 
 .filter-row { display: flex; gap: 8px; align-items: center; }
 .filter-row label { color: var(--text-dim); font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
@@ -388,7 +389,12 @@ function renderPromptMessages(msgs) {
   if (!msgs || !msgs.length) return "";
   return msgs.map(function(m) {
     var roleClass = "prompt-msg-role prompt-msg-role-" + m.role;
-    return '<div class="prompt-msg"><div class="' + roleClass + '">' + m.role + '</div><div class="prompt-msg-content">' + escHtml(m.content) + '</div></div>';
+    // In structured reasoning_history_mode a past turn's plan travels as
+    // reasoning_content, not in the text, so show it or the turn looks empty.
+    var thinking = m.reasoning_content
+      ? '<div class="prompt-msg-thinking">&lt;think&gt; ' + escHtml(m.reasoning_content) + ' &lt;/think&gt;</div>'
+      : "";
+    return '<div class="prompt-msg"><div class="' + roleClass + '">' + m.role + '</div>' + thinking + '<div class="prompt-msg-content">' + escHtml(m.content) + '</div></div>';
   }).join("");
 }
 

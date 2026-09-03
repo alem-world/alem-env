@@ -42,6 +42,15 @@ agent:
   structured_scratchpad: false # if true, we provide a structure to the scratchpad prompt
   structured_communication: false # if true, we provide a structure to the communication prompt
   max_parse_retries: 0  # re-prompts when action parsing fails (0 = no retries, each retry = 1 extra LLM call)
+  # Where a past turn's reasoning is kept when it is fed back to the model.
+  # "inline" writes it into the assistant turn's own text as "Previous plan",
+  # which is what every model on the board has run. "structured" leaves the text
+  # as the action alone and sends the reasoning as reasoning_content, for models
+  # whose chat template reads an empty thinking block as "stop thinking"
+  # (e.g. Laguna S 2.1). Either way the
+  # reasoning reaches the model once. Override per model with
+  # clients.N.reasoning_history_mode when a team is mixed. vLLM, thinking on.
+  reasoning_history_mode: inline
 
 ALG_NAME: "llm"  # Set automatically in eval_alem.py based on agent type and model ID
 ENV_NAME: "Alem-Coop-Symbolic" # Options: Alem-Coop-Symbolic, Alem-Coop-Symbolic-Debug, Alem-Coop-Pixels
