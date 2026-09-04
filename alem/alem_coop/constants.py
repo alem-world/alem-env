@@ -1,5 +1,6 @@
 import os
 import pathlib
+import sys
 from enum import Enum
 
 import imageio.v3 as iio
@@ -1661,15 +1662,15 @@ def _cache_is_valid(textures):
 if os.path.exists(TEXTURE_CACHE_FILE) and not os.environ.get("CRAFTAX_RELOAD_TEXTURES", False):
     TEXTURES = load_compressed_pickle(TEXTURE_CACHE_FILE)
     if not _cache_is_valid(TEXTURES):
-        print("Texture cache is stale (missing keys) — regenerating...")
+        print("Texture cache is stale (missing keys) — regenerating...", file=sys.stderr)
         TEXTURES = None
     else:
-        print("Loading textures from cache")
+        print("Loading textures from cache", file=sys.stderr)
 else:
     TEXTURES = None
 
 if TEXTURES is None:
-    print("Processing textures")
+    print("Processing textures", file=sys.stderr)
     TEXTURES = {
         BLOCK_PIXEL_SIZE_AGENT: load_all_textures(BLOCK_PIXEL_SIZE_AGENT),
         BLOCK_PIXEL_SIZE_IMG: load_all_textures(BLOCK_PIXEL_SIZE_IMG),
