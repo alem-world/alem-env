@@ -39,8 +39,10 @@ LLMResponse = namedtuple(
         "output_tokens",
         "reasoning",
         "reasoning_tokens",
+        # Log cached tokens if we can.
+        "cached_tokens",
     ],
-    defaults=(None, 0),
+    defaults=(None, 0, 0),
 )
 
 httpx_logger = logging.getLogger("httpx")
@@ -411,8 +413,8 @@ class OpenAIWrapper(LLMClientWrapper):
                 len(completion_text.strip()),
             )
 
-        # cached_tokens bills at a fraction of the input rate. Log it, or the
-        # cost of a long run can only be estimated.
+        # cached_tokens bills at a fraction of the input rate, so the episode
+        # log carries it alongside the other counts.
         logger.info(
             "Model %s: summary %s chars, %s reasoning tokens, %s/%s input tokens cached",
             self.model_id,
@@ -430,6 +432,7 @@ class OpenAIWrapper(LLMClientWrapper):
             output_tokens=output_tokens,
             reasoning=reasoning_content,
             reasoning_tokens=reasoning_tokens,
+            cached_tokens=cached_tokens,
         )
 
     def _initialize_client(self):

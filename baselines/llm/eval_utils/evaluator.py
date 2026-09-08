@@ -483,6 +483,7 @@ class Evaluator:
             "input_tokens": 0,
             "output_tokens": 0,
             "reasoning_tokens": 0,
+            "cached_tokens": 0,
             "stop_reason_counts": defaultdict(int),
             "incomplete_response_count": 0,
             "incomplete_response_reasons": defaultdict(int),
@@ -504,6 +505,7 @@ class Evaluator:
             episode_log[f"agent_{i}_input_tokens"] = 0
             episode_log[f"agent_{i}_output_tokens"] = 0
             episode_log[f"agent_{i}_reasoning_tokens"] = 0
+            episode_log[f"agent_{i}_cached_tokens"] = 0
             episode_log[f"agent_{i}_stop_reason_counts"] = defaultdict(int)
             episode_log[f"agent_{i}_incomplete_response_count"] = 0
 
@@ -703,6 +705,9 @@ class Evaluator:
                         episode_log[f"agent_{agent_idx}_reasoning_tokens"] += getattr(
                             response, "reasoning_tokens", 0
                         )
+                        episode_log[f"agent_{agent_idx}_cached_tokens"] += getattr(
+                            response, "cached_tokens", 0
+                        )
                         stop_reason = getattr(response, "stop_reason", None) or "unknown"
                         episode_log["stop_reason_counts"][stop_reason] += 1
                         episode_log[f"agent_{agent_idx}_stop_reason_counts"][stop_reason] += 1
@@ -725,6 +730,7 @@ class Evaluator:
                         episode_log["input_tokens"] += response.input_tokens
                         episode_log["output_tokens"] += response.output_tokens
                         episode_log["reasoning_tokens"] += getattr(response, "reasoning_tokens", 0)
+                        episode_log["cached_tokens"] += getattr(response, "cached_tokens", 0)
 
                     # Trajectory: discrete action indices + text actions.
                     # Standard actions map directly via ACTIONS list. "Give to Agent X"
