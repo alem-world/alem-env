@@ -1378,13 +1378,13 @@ class Evaluator:
             clients_log = OmegaConf.to_container(self.config.clients, resolve=True)
             if not isinstance(clients_log, list):
                 raise ValueError("config.clients must resolve to a list for episode logging.")
-            # Log the actual runtime enable_thinking (may differ from config default)
+            # enable_thinking is resolved per client, not once for the run, so
+            # log what each slot actually ran with. A mixed team differs slot
+            # by slot.
             for client_cfg in clients_log:
                 if isinstance(client_cfg, dict):
-                    client_cfg["enable_thinking_resolved"] = getattr(
-                        agent_factory,
-                        "_resolved_enable_thinking",
-                        None,
+                    client_cfg["enable_thinking_resolved"] = (
+                        agent_factory._resolve_enable_thinking(client_cfg)
                     )
             # Same for reasoning_history_mode, which can be set per client and
             # falls back to the agent default. Worth writing down next to the

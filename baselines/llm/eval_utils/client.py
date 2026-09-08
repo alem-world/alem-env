@@ -59,6 +59,88 @@ def process_image_openai(image):
     }
 
 
+def process_image_openai_responses(image):
+    """Process an image for the OpenAI Responses API by converting it to base64.
+
+    The Responses API takes an "input_image" part with the data URI inline,
+    not the "image_url" object Chat Completions expects.
+    """
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    base64_image = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    return {
+        "type": "input_image",
+        "image_url": f"data:image/png;base64,{base64_image}",
+    }
+
+
+# Asked of every OpenAI reasoning model, as the Gemini wrapper asks for
+# thoughts. "auto" lets the provider pick the level of detail.
+REASONING_SUMMARY = "auto"
+
+# Summaries are best effort per response, so one miss means nothing. Give up
+# only after this many reasoning calls have all come back without one.
+SUMMARY_PROBE_CALLS = 10
+
+# Only probe the opening of an episode. A failed episode still writes its
+# result JSON, and resume skips any episode whose JSON already exists, so
+# aborting late loses that seed rather than retrying it. Stop counting here.
+SUMMARY_PROBE_WINDOW = 30
+
+
+def client_returns_native_reasoning(client_config):
+    """Whether this client returns a reasoning trace in its own field.
+
+    Agents use this to decide whether to ask for a visible <think> block. vLLM
+    (with --reasoning-parser), Gemini and OpenAI populate .reasoning. Claude
+    does not, since ClaudeWrapper has no extended thinking.
+    """
+    return str(_cfg_get(client_config, "client_name") or "").lower() != "claude"
+
+
+def _cfg_get(config, key, default=None):
+    """Read a key off a config that may be a dict or an OmegaConf/attr object."""
+    if config is None:
+        return default
+    if isinstance(config, dict):
+        return config.get(key, default)
+    value = getattr(config, key, default)
+    return default if value is None else value
+
+
+def _classify_responses_incomplete(status, incomplete_reason):
+    """Map a Responses API status onto the finish_reason vocabulary.
+
+    The evaluator counts stop reasons and triggers its early stop on the Chat
+    Completions words, so this path returns the same ones.
+    """
+    if status == "completed":
+        return "stop"
+    if status == "incomplete":
+        if incomplete_reason == "max_output_tokens":
+            return "length"
+        return incomplete_reason or "incomplete"
+    return status or "unknown"
+
+
+def _extract_responses_reasoning(response):
+    """Pull the reasoning summary text out of a Responses API result.
+
+    Reasoning is its own output item holding summary parts, separate from the
+    message item with the answer. This is the provider's summary of its
+    reasoning, not the raw trace a vLLM reasoning-parser returns.
+    """
+    chunks = []
+    for item in getattr(response, "output", None) or []:
+        if getattr(item, "type", None) != "reasoning":
+            continue
+        for part in getattr(item, "summary", None) or []:
+            text = getattr(part, "text", None)
+            if text and text.strip():
+                chunks.append(text.strip())
+    return "\n\n".join(chunks) if chunks else None
+
+
 def process_image_claude(image):
     """Process an image for Anthropic's Claude API by converting it to base64."""
     buffered = BytesIO()
@@ -199,6 +281,157 @@ class OpenAIWrapper(LLMClientWrapper):
         super().__init__(client_config)
         self._initialized = False
 
+        # Chat Completions cannot return a reasoning trace, so OpenAI goes
+        # through the Responses API. vLLM, NVIDIA and XAI are OpenAI-compatible
+        # endpoints rather than OpenAI, and stay on Chat Completions.
+        self.use_responses_api = self.client_name.lower() == "openai"
+        self._summary_seen = False
+        self._reasoning_calls_without_summary = 0
+        self._calls = 0
+        self._warned_sampling = False
+
+        history_mode = _cfg_get(client_config, "reasoning_history_mode", "inline")
+        if self.use_responses_api and history_mode == "structured":
+            raise ValueError(
+                "reasoning_history_mode=structured needs a reasoning_content field on "
+                "the assistant turn, which a Responses API input item has no place for. "
+                "Use reasoning_history_mode=inline."
+            )
+
+    def convert_messages_responses(self, messages):
+        """Convert prompt-builder messages into Responses API input items.
+
+        Content parts are named by direction: input_text and input_image for
+        what the model is given, output_text for what it produced.
+        """
+        converted = []
+        for msg in messages:
+            is_assistant = msg.role == "assistant"
+            part_type = "output_text" if is_assistant else "input_text"
+            content = [{"type": part_type, "text": msg.content}]
+            # Only an input message can carry an image.
+            if msg.attachment is not None and not is_assistant:
+                content.append(process_image_openai_responses(msg.attachment))
+            if self.alternate_roles and converted and converted[-1]["role"] == msg.role:
+                converted[-1]["content"].extend(content)
+            else:
+                converted.append({"role": msg.role, "content": content})
+        return converted
+
+    def _generate_responses(self, messages):
+        """Generate via the Responses API, capturing the reasoning summary."""
+        converted_input = self.convert_messages_responses(messages)
+
+        def api_call():
+            max_tokens = self.client_kwargs.get("max_tokens", 2048)
+            max_output_tokens = self.client_kwargs.get("max_completion_tokens", max_tokens)
+
+            reasoning = {"summary": REASONING_SUMMARY}
+            reasoning_effort = self.client_kwargs.get("reasoning_effort")
+            if reasoning_effort is not None:
+                reasoning["effort"] = reasoning_effort
+
+            api_kwargs = {
+                "model": self.model_id,
+                "input": converted_input,
+                "max_output_tokens": max_output_tokens,
+                "reasoning": reasoning,
+            }
+
+            # Reasoning models take no sampling controls. gpt-6-astra rejects
+            # top_p at any value, and temperature at anything but its own
+            # default; the Responses API has no seed at all. Each one is a 400,
+            # which is non-retryable, so a config that sets any of them would
+            # kill the run on its first step. Drop them, and warn once.
+            ignored = [
+                k for k in ("temperature", "top_p", "seed")
+                if self.client_kwargs.get(k) is not None
+            ]
+            if ignored and not self._warned_sampling:
+                self._warned_sampling = True
+                logger.warning(
+                    "Ignoring %s for %s: reasoning models on the Responses API take "
+                    "no sampling controls.",
+                    ", ".join(ignored),
+                    self.model_id,
+                )
+
+            logger.debug(f"Responses API kwargs for model {self.model_id}: {api_kwargs}")
+            response = self.client.responses.create(**api_kwargs)
+
+            if response is None:
+                raise RuntimeError("LLM response is None")
+            return response
+
+        response = self.execute_with_retries(api_call)
+
+        completion_text = getattr(response, "output_text", None) or ""
+        reasoning_content = _extract_responses_reasoning(response)
+
+        usage = getattr(response, "usage", None)
+        input_tokens = getattr(usage, "input_tokens", 0) or 0
+        input_details = getattr(usage, "input_tokens_details", None)
+        cached_tokens = getattr(input_details, "cached_tokens", 0) or 0
+        output_tokens = getattr(usage, "output_tokens", 0) or 0
+        output_details = getattr(usage, "output_tokens_details", None)
+        reasoning_tokens = getattr(output_details, "reasoning_tokens", 0) or 0
+
+        status = getattr(response, "status", None)
+        incomplete_reason = getattr(
+            getattr(response, "incomplete_details", None), "reason", None
+        )
+        stop_reason = _classify_responses_incomplete(status, incomplete_reason)
+
+        self._calls += 1
+        if reasoning_content:
+            self._summary_seen = True
+        elif not self._summary_seen and reasoning_tokens > 0:
+            self._reasoning_calls_without_summary += 1
+            if (
+                self._calls <= SUMMARY_PROBE_WINDOW
+                and self._reasoning_calls_without_summary >= SUMMARY_PROBE_CALLS
+            ):
+                raise RuntimeError(
+                    f"Model {self.model_id} has now spent reasoning tokens on "
+                    f"{SUMMARY_PROBE_CALLS} calls without once returning a "
+                    f"'{REASONING_SUMMARY}' summary, so every episode would score with an "
+                    "empty reasoning column. Reasoning summaries require a verified "
+                    "organisation; verify it at platform.openai.com and re-run."
+                )
+
+        if stop_reason != "stop":
+            logger.warning(
+                "Incomplete Response for model %s: status=%s reason=%s "
+                "output_tokens=%s reasoning_tokens=%s completion_chars=%s",
+                self.model_id,
+                status,
+                incomplete_reason,
+                output_tokens,
+                reasoning_tokens,
+                len(completion_text.strip()),
+            )
+
+        # cached_tokens bills at a fraction of the input rate. Log it, or the
+        # cost of a long run can only be estimated.
+        logger.info(
+            "Model %s: summary %s chars, %s reasoning tokens, %s/%s input tokens cached",
+            self.model_id,
+            len(reasoning_content or ""),
+            reasoning_tokens,
+            cached_tokens,
+            input_tokens,
+        )
+
+        return LLMResponse(
+            model_id=self.model_id,
+            completion=completion_text.strip(),
+            stop_reason=stop_reason,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            reasoning=reasoning_content,
+            reasoning_tokens=reasoning_tokens,
+        )
+
     def _initialize_client(self):
         if not self._initialized:
             if self.client_name.lower() == "vllm":
@@ -250,6 +483,8 @@ class OpenAIWrapper(LLMClientWrapper):
 
     def generate(self, messages):
         self._initialize_client()
+        if self.use_responses_api:
+            return self._generate_responses(messages)
         converted_messages = self.convert_messages(messages)
 
         def api_call():
