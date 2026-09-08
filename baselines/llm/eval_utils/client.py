@@ -101,6 +101,8 @@ class LLMClientWrapper:
         # Requires --reasoning-parser <model> on the vLLM server.
         # False = suppress thinking (explicit CoT in response); True = internal thinking.
         self.enable_thinking = getattr(client_config, "enable_thinking", False)
+        # Where a past assistant turn's reasoning goes when it is fed back.
+        self.reasoning_history_mode = getattr(client_config, "reasoning_history_mode", "inline")
 
     def generate(self, messages):
         raise NotImplementedError("This method should be overridden by subclasses")
@@ -227,7 +229,23 @@ class OpenAIWrapper(LLMClientWrapper):
             ):
                 converted_messages[-1]["content"].extend(new_content)
             else:
-                converted_messages.append({"role": msg.role, "content": new_content})
+                entry = {"role": msg.role, "content": new_content}
+                # In structured mode the reasoning is sent as a diff field, because
+                # the prompt builder has already left it out of the turn's text.
+                #
+                # Templates that render history write a thinking block per past
+                # assistant turn, and with nothing to put in it that block is
+                # empty. Usually harmless. Laguna S 2.1 is the exception we hit:
+                # an empty block is one token off its own "not thinking" marker,
+                # so leaving it empty quietly switches the model out of
+                # reasoning for the rest of the episode.
+                if (
+                    self.reasoning_history_mode == "structured"
+                    and msg.role == "assistant"
+                    and getattr(msg, "reasoning", None)
+                ):
+                    entry["reasoning_content"] = msg.reasoning
+                converted_messages.append(entry)
         return converted_messages
 
     def generate(self, messages):

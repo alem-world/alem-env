@@ -1386,6 +1386,19 @@ class Evaluator:
                         "_resolved_enable_thinking",
                         None,
                     )
+            # Same for reasoning_history_mode, which can be set per client and
+            # falls back to the agent default. Worth writing down next to the
+            # score: it decides how prior reasoning is fed back, and a row is
+            # only comparable to another row that ran the same way.
+            for agent_idx, client_cfg in enumerate(clients_log):
+                if not isinstance(client_cfg, dict):
+                    continue
+                client = getattr(
+                    agents[agent_idx] if agent_idx < len(agents) else None, "client", None
+                )
+                client_cfg["reasoning_history_mode_resolved"] = getattr(
+                    client, "reasoning_history_mode", None
+                )
             episode_log["clients"] = clients_log
 
             json_filename = os.path.join(

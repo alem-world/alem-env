@@ -138,7 +138,10 @@ class TestLocationHelpers(unittest.TestCase):
     def test_relative_direction_str_appends_exact_coordinates(self):
         # Coordinates are appended to the relative direction, not swapped for it:
         # replacing it used to discard the precise_location/egocentric hint.
-        wrapper = _make_wrapper(exact_coordinates=True)
+        # precise_location is pinned rather than left to the default: this test
+        # is about the coordinate being appended, so it should not also depend
+        # on which of the two direction formats the default selects.
+        wrapper = _make_wrapper(exact_coordinates=True, precise_location=False)
         result = wrapper._relative_direction_str(-1, 2, abs_pos=np.array([7, 11]))
         self.assertEqual(result, "3 steps north-east (x=11, y=7)")
 

@@ -1021,8 +1021,15 @@ class AlemLanguageWrapper:
         show_affordances: If True, append the list of legal action names to
             each per-turn observation (the <all_actions> block in the system
             prompt becomes optional via include_all_actions).
-        exact_coordinates: If True, replace relative location text with
-            absolute coordinates "(x=C, y=R)" for all reported locations.
+        exact_coordinates: If True, append absolute coordinates "(x=C, y=R)"
+            to every reported location. On by default: the shipped config sets
+            it, and agents rely on coordinates to name a tile to a teammate,
+            which relative bearings cannot do (they are relative to the
+            speaker, so they mean a different tile to the listener).
+        precise_location: If True, describe offsets per axis ("2 steps north
+            and 3 steps east"); if False, one combined direction and a
+            Manhattan distance ("5 steps north-east"). On by default to match
+            the shipped config.
         use_ascii: If True, render the local view as an ASCII grid instead of
             the "You see:" text list.
     """
@@ -1035,8 +1042,8 @@ class AlemLanguageWrapper:
         prompt_mode="specific_collaborative",
         max_episode_steps=10000,
         unique_items=True,
-        precise_location=False,
-        exact_coordinates=False,
+        precise_location=True,
+        exact_coordinates=True,
         egocentric=False,
         skip_items=None,
         edge_only_items=None,
@@ -1044,7 +1051,7 @@ class AlemLanguageWrapper:
         render_downscale=1,
         debug=False,
         render_images=False,
-        show_affordances=False,
+        show_affordances=True,
         use_ascii=False,
         use_image_scene=False,
     ):
@@ -1114,7 +1121,7 @@ class AlemLanguageWrapper:
         self.exact_coordinates = exact_coordinates
         self.egocentric = egocentric  # True: ahead/behind/left/right, False: north/south/east/west
         self.skip_items = skip_items if skip_items is not None else ["grass", "sand", "path"]
-        self.edge_only_items = edge_only_items if edge_only_items is not None else []
+        self.edge_only_items = edge_only_items if edge_only_items is not None else ["water"]
 
         # Create block type name mapping
         self.block_id_to_name = {block.value: block.name.lower() for block in BlockType}

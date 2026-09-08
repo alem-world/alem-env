@@ -133,10 +133,42 @@ class AgentFactory:
         )
         enable_thinking = self._resolve_enable_thinking()
         client_config["enable_thinking"] = enable_thinking
+
+        mode = client_config.get("reasoning_history_mode") or getattr(
+            self.config.agent, "reasoning_history_mode", "inline"
+        )
+        if mode not in ("inline", "structured"):
+            raise ValueError(
+                f"reasoning_history_mode must be 'inline' or 'structured', got {mode!r}"
+            )
+        if mode == "structured":
+            # Nothing else can carry reasoning_content: the hosted
+            # OpenAI-compatible APIs reject unknown message fields, and with
+            # thinking off the reasoning belongs in the visible text anyway.
+            # Refuse rather than quietly fall back, because falling back to
+            # inline would silently change the protocol a run is scored under.
+            client_name = str(client_config.get("client_name", "")).lower()
+            if client_name != "vllm":
+                raise ValueError(
+                    "reasoning_history_mode='structured' needs client_name='vllm', "
+                    f"got {client_name!r} for agent {agent_idx}"
+                )
+            if not enable_thinking:
+                raise ValueError(
+                    "reasoning_history_mode='structured' needs agent.reasoning=true; "
+                    "with thinking off, use 'inline' so the reasoning stays in the "
+                    "visible text"
+                )
+        client_config["reasoning_history_mode"] = mode
         client_config = OmegaConf.create(client_config)
 
         client_factory = create_llm_client(client_config)
-        prompt_builder = create_prompt_builder(self.config.agent)
+        # The prompt builder needs the same mode: it decides whether the
+        # reasoning goes into the assistant turn's text or is left for the
+        # client to send as a field.
+        prompt_builder = create_prompt_builder(
+            OmegaConf.merge(self.config.agent, {"reasoning_history_mode": mode})
+        )
 
         if agent_type == "naive":
             return NaiveAgent(client_factory, prompt_builder)
