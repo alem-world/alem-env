@@ -1042,11 +1042,6 @@ class AlemLanguageWrapper:
         prompt_mode="specific_collaborative",
         max_episode_steps=10000,
         unique_items=True,
-        # These four match baselines/llm/config/config.yaml, the configuration
-        # every published ALEM result is run under. They were False here while
-        # the config turned them on, so anyone constructing the wrapper directly
-        # -- rather than through alem_env.py and a config file -- silently got a
-        # different observation from the one the numbers were measured with.
         precise_location=True,
         exact_coordinates=True,
         egocentric=False,
