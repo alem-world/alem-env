@@ -48,6 +48,14 @@ httpx_logger.setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
+class CredentialError(RuntimeError):
+    """A client's credentials are missing or were rejected by the backend.
+
+    Raised by the preflight so a run stops before spending compute, rather than
+    discovering it one API call at a time.
+    """
+
+
 def process_image_openai(image):
     """Process an image for OpenAI API by converting it to base64."""
     buffered = BytesIO()
@@ -106,6 +114,50 @@ class LLMClientWrapper:
 
     def generate(self, messages):
         raise NotImplementedError("This method should be overridden by subclasses")
+
+    def required_credential_env_vars(self):
+        """Env vars this backend authenticates with; any one of them suffices.
+
+        Empty means the backend needs no credentials (e.g. a local vLLM server).
+        """
+        return ()
+
+    def validate_credentials(self):
+        """Raise CredentialError unless this client can actually reach its backend.
+
+        Two failures, two costs. A missing key is knowable for free, so it is
+        checked first. A key that exists but is refused can only be found by
+        asking, so the check ends with one 1-token request.
+
+        The probe leaves the client's own settings unchanged, but may leave it
+        needing re-initialisation — call it on a throwaway client.
+        """
+        from .prompt_builder import Message  # lazy import to avoid circular deps
+
+        required = self.required_credential_env_vars()
+        if required and not any(os.environ.get(var) for var in required):
+            raise CredentialError(
+                f"No credentials for client '{self.client_name}' (model {self.model_id}): "
+                f"set {' or '.join(required)}."
+            )
+
+        saved_kwargs = self.client_kwargs
+        saved_retries = self.max_retries
+        self.client_kwargs = {**saved_kwargs, "max_tokens": 1, "max_completion_tokens": 1}
+        self.max_retries = min(saved_retries, 2)
+        try:
+            self.generate([Message(role="user", content="ping")])
+        except Exception as e:
+            raise CredentialError(
+                f"Client '{self.client_name}' (model {self.model_id}) could not complete a "
+                f"one-token request: {e}"
+            ) from e
+        finally:
+            self.client_kwargs = saved_kwargs
+            self.max_retries = saved_retries
+            # The probe's settings may have been baked into a lazily built
+            # request config; force a rebuild rather than run with max_tokens=1.
+            self._initialized = False
 
     def _status_code_from_exception(self, exc):
         status_code = getattr(exc, "status_code", None)
@@ -198,6 +250,18 @@ class OpenAIWrapper(LLMClientWrapper):
             raise ImportError("openai package is required. Install with: pip install openai")
         super().__init__(client_config)
         self._initialized = False
+
+    def required_credential_env_vars(self):
+        name = self.client_name.lower()
+        if "vllm" in name:
+            # A local server: _initialize_client authenticates with "EMPTY".
+            return ()
+        if "nvidia" in name:
+            return ("NVIDIA_API_KEY",)
+        # XAI passes api_key=None, so the SDK falls back to OPENAI_API_KEY —
+        # surprising, but naming the var the code actually reads beats naming
+        # the one it ought to.
+        return ("OPENAI_API_KEY",)
 
     def _initialize_client(self):
         if not self._initialized:
@@ -407,6 +471,10 @@ class GoogleGenerativeAIWrapper(LLMClientWrapper):
         super().__init__(client_config)
         self._initialized = False
 
+    def required_credential_env_vars(self):
+        # genai.Client() reads either; the SDK prefers GOOGLE_API_KEY.
+        return ("GEMINI_API_KEY", "GOOGLE_API_KEY")
+
     def _initialize_client(self):
         if not self._initialized:
             self.client = genai.Client()
@@ -584,6 +652,14 @@ class GoogleGenerativeAIWrapper(LLMClientWrapper):
                     reasoning_tokens=reasoning_tokens,
                 )
         except Exception as e:
+            # Degrading to an empty completion is the right answer for a flaky
+            # backend and the wrong one for a bad key: the agent parses nothing,
+            # defaults to Noop, and the run continues to the last step of the last
+            # episode paying for every other agent's calls. Non-retryable failures
+            # (auth, bad request) are deterministic — surface them instead.
+            if self._is_non_retryable_exception(e):
+                logger.error(f"Non-retryable API failure for model {self.model_id}: {e}")
+                raise
             logger.error(
                 f"API call failed after {self.max_retries} retries: {e}. Returning empty completion."
             )
@@ -606,6 +682,9 @@ class ClaudeWrapper(LLMClientWrapper):
             raise ImportError("anthropic package is required. Install with: pip install anthropic")
         super().__init__(client_config)
         self._initialized = False
+
+    def required_credential_env_vars(self):
+        return ("ANTHROPIC_API_KEY",)
 
     def _initialize_client(self):
         if not self._initialized:

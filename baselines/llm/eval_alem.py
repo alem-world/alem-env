@@ -94,6 +94,12 @@ def main(config: DictConfig):
         )
     primary_model_id = config.clients[0].model_id
 
+    # Check credentials before anything is spent — before W&B opens a run, and
+    # outside the try below that logs a failed run and carries on. A bad key
+    # otherwise surfaces one API call at a time, or (Gemini) not at all.
+    if not config.eval.get("upload_only", False) and config.eval.get("preflight_clients", True):
+        AgentFactory(config).preflight_clients()
+
     # Initialize W&B
     wandb_section = config.get("wandb", {})
     entity = wandb_section.get("entity") or config.get("ENTITY")

@@ -102,6 +102,7 @@ eval:
   resume_from: null
   run_name: null  # Optional stable base name for resumable runs; difficulty is appended automatically.
   upload_only: false  # If true, skip evaluator.run() and only upload existing results from resume_from to W&B.
+  preflight_clients: true  # Check every client's credentials with one 1-token call before the run starts.
 
   num_episodes:
     alem: 20
