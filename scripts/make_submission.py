@@ -182,7 +182,9 @@ def main() -> int:
         default="",
         help="Short human label, e.g. 'high reasoning' (default: episode count)",
     )
-    p.add_argument("--harness-version", default="robust_all_v0.1")
+    # Keep in step with LLM_STACK_VERSION in alem/_version.py: the wrapper and
+    # the harness are one interface and share a version.
+    p.add_argument("--harness-version", default="robust_all_v0.1.1")
     p.add_argument("--outputs", default="outputs/alem_eval", help="Where eval runs were written")
     p.add_argument(
         "--out", default="outputs/submissions", help="Where to write the submission bundle"

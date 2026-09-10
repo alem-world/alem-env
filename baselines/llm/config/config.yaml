@@ -145,7 +145,6 @@ alem:
   randomize_alpha: false           # Must be false for fixed-difficulty eval (matches RL eval)
 
   wrapper:
-    version: "v0.125-fix-trading" 
     unique_items: true
     precise_location: true  # true: "2 steps north and 3 steps east" (per-axis); false: "5 steps north-east" (Manhattan + combined direction)
     exact_coordinates: true  # true: replace relative location text with coordinates "(x=41, y=23)"

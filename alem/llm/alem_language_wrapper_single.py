@@ -191,7 +191,7 @@ Choose actions to maximize achievements while staying alive. Your observations s
 - **Facing**: your facing direction is set by your last movement action and persists until you move again. **Do** always targets the tile in your current facing direction.
 - **Do** is your main interaction: face a tile and use the **Do** action on exactly that tile to chop trees, mine ore, attack creatures, drink water, or open chests.
 - **Crafting**: stand next to (including diagonally) the required station and use the craft action; you do NOT need to face it. Diamond items always require an adjacent epic forge, not a table.
-- **Placing**: face the target tile, then use the place action. Tables and furnaces need an empty non-solid tile that is not water or lava; stone can also be placed into water (costs 1 stone). Place Plant puts a sapling on the faced tile. Place Torch lights dark areas.
+- **Placing**: face the target tile, then use the place action. Tables and furnaces need an empty non-solid tile that is not water or lava; stone can also be placed into water or lava (costs 1 stone). Mine the placed stone with a pickaxe to leave a walkable path across the water or lava. Place Plant puts a sapling on the faced tile. Place Torch lights dark areas.
 - **Ranged combat**: use Shoot Arrow while facing a creature (requires a bow + arrows). Bows are found in dungeon chests.
 - **Elite mobs** are tougher and deal more damage.
 """

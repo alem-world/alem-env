@@ -86,7 +86,7 @@ Use these unless you state a deviation:
 - All three difficulties, `easy`, `medium` and `hard`, reported **separately** and never averaged.
 - 20 episodes per difficulty (10 minimum if cost-constrained), on the shared eval seeds (`EVAL_SEED=9999`).
 - Base%, Coord.% and Total%, each with a 95% CI, all produced by `make_submission.py`.
-- The `alem-env` version you evaluated on, e.g. `0.2.0` (`python -c "import alem; print(alem.__version__)"`).
+- The `alem-env` version you evaluated on, e.g. `0.2.1` (`python -c "import alem; print(alem.__version__)"`).
 
 Change the harness, prompt mode, history, communication, scratchpad, or parsing? Say so; it's
 part of the submission.
