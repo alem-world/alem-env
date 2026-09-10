@@ -22,7 +22,7 @@ authors:
     given-names: Tim
   - family-names: Storkey
     given-names: Amos
-version: 0.2.0
+version: 0.2.1
 date-released: 2026-06-17
 license: MIT
 repository-code: "https://github.com/alem-world/alem-env"

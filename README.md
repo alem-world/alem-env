@@ -501,7 +501,9 @@ Use `scripts/smoke_llm.sh YOUR_MODEL_ID --base-url http://localhost:8000/v1 --st
 
 Fixes that change environment behaviour are listed here, so numbers produced on different versions can be compared with the difference in mind. Report an Alem number together with the version it was produced on.
 
-**Prior to v0.2.0 — ladder placement.** The up-ladder and down-ladder positions were drawn independently and never checked against each other, so they could share a row and the up-ladders would replace some of the down-ladders. Affected levels could have fewer ways down than intended. This should be a minor issue for most runs, but it does change generated worlds, so results from before and after the fix are not directly comparable.
+- **Prior to v0.2.0 - ladder placement.** The up-ladder and down-ladder positions were drawn independently and never checked against each other, so they could share a row and the up-ladders would replace some of the down-ladders. Affected levels could have fewer ways down than intended. This should be a minor issue for most runs, but it does change generated worlds, so results from before and after the fix are not directly comparable.
+
+- **Prior to v0.2.1 - lava bridging.** Stone can now be placed into lava and mined into a walkable path, restoring Craftax's Fire Realm bridging mechanic without changing generated maps. This changes episode behaviour, but no agents have reached the Fire Realm yet, so it doesn't affect scores. 
 
 ## Contributing
 

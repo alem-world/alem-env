@@ -1445,11 +1445,9 @@ def place_block(rng, state, action, env_params, static_params):
         is_valid_placement,
         jnp.logical_or(
             placement_terrain == BlockType.WATER.value,
-            jnp.logical_and(
-                jnp.logical_not(is_in_solid_block(new_map, placing_block_position)),
-                # we dont do water check here because we allow placing stone in water (bridge)
-                placement_terrain != BlockType.LAVA.value,
-            ),
+            # Lava is non-solid and accepts stone. Mining the stone leaves PATH,
+            # which players can cross without stepping into lava.
+            jnp.logical_not(is_in_solid_block(new_map, placing_block_position)),
         ),
     )
     is_player_placing_stone = jnp.logical_and(
