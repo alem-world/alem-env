@@ -49,6 +49,13 @@ httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
+# The documented opt-in for constrained decoding: append this to an
+# OpenAI-compatible client name (e.g. "vllm_constrained"). Defined here rather
+# than in constrained.py because that module imports this one, and because the
+# factory below must test the name WITHOUT importing constrained.py (whose
+# module-level action-list import would then break every client, not just this one).
+CONSTRAINED_SUFFIX = "_constrained"
+
 
 def process_image_openai(image):
     """Process an image for OpenAI API by converting it to base64."""
@@ -518,6 +525,10 @@ class OpenAIWrapper(LLMClientWrapper):
             reasoning_effort = self.client_kwargs.get("reasoning_effort")
             if reasoning_effort is not None and client_name == "openai":
                 api_kwargs["reasoning_effort"] = reasoning_effort
+            # Structured/constrained decoding (see eval_utils/constrained.py).
+            response_format = self.client_kwargs.get("response_format")
+            if response_format is not None:
+                api_kwargs["response_format"] = response_format
             # Pass enable_thinking to vLLM when a --reasoning-parser is active.
             # Only for vLLM — the real OpenAI API doesn't support extra_body.
             if client_name == "vllm":
@@ -895,6 +906,18 @@ def create_llm_client(client_config):
 
     def client_factory():
         client_name_lower = client_config.client_name.lower()
+        # Checked before the OpenAI-compatible branch below: a constrained client
+        # name (e.g. "vllm_constrained") also matches "vllm" and would otherwise
+        # fall through to the unconstrained wrapper.
+        #
+        # Suffix, not substring: "vllm_unconstrained" *contains* "constrained" and
+        # must route to the PLAIN wrapper. A substring test hands a caller who asked
+        # for unconstrained decoding the constrained one — silently, which is the
+        # same class of fault as dropping response_format while reporting success.
+        if client_name_lower.endswith(CONSTRAINED_SUFFIX):
+            from .constrained import ConstrainedOpenAIWrapper
+
+            return ConstrainedOpenAIWrapper(client_config)
         if (
             "openai" in client_name_lower
             or "vllm" in client_name_lower

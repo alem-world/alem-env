@@ -339,6 +339,7 @@ agent:
 ```yaml
 clients:
   - client_name: "vllm"            # "vllm" | "openai" | "anthropic" | "gemini" | "nvidia" | "xai"
+                                   # + "_constrained" on an OpenAI-compatible name (see below)
     model_id: "google/gemma-4-E2B-it"
     base_url: "http://localhost:8000/v1"
     generate_kwargs:
@@ -347,6 +348,30 @@ clients:
     timeout: 420
     max_retries: 5
 ```
+
+#### Constrained decoding (optional)
+
+Appending `_constrained` to an OpenAI-compatible client name (e.g.
+`client_name: "vllm_constrained"`) constrains generation to a JSON schema whose `action`
+field is an enum of the real action list, then re-emits the result as the same
+`<action>`/`<communication>`/`<scratchpad>` tags the agents already parse. An invalid
+action becomes unemittable rather than merely discouraged:
+
+```bash
+python baselines/llm/eval_alem.py \
+    clients.0.client_name=vllm_constrained \
+    clients.1.client_name=vllm_constrained \
+    clients.2.client_name=vllm_constrained \
+    clients.0.model_id=Qwen/Qwen2.5-0.5B-Instruct
+```
+
+This exists to separate **format compliance** from **competence**. Models below ~1B
+routinely fail on output syntax before their play is ever measured (`qwen2.5:0.5b` parses
+at 0.40 unconstrained, 1.00 constrained), so an unconstrained score in that range reflects
+the parser as much as the model. Note that it removes a measurement confound — it does not
+make a small model good: the constrained 0.5B emits valid actions but degenerate ones.
+Requires a backend that honours `response_format` with a `json_schema` (vLLM guided
+decoding, Ollama). See `eval_utils/constrained.py`.
 
 `clients.i` maps to `agent_id=i`. Provide one entry per agent.
 
