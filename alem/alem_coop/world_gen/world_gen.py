@@ -34,6 +34,50 @@ if TYPE_CHECKING:
     from ..alem_state import EnvParams, StaticEnvParams
 
 
+def resolve_ladder_collision(
+    rng: chex.PRNGKey,
+    static_params: StaticEnvParams,
+    config,
+    map: Int[Array, "map_height map_width"],
+    ladders_down: Int[Array, "num_ladders 2"],
+    ladders_up: Int[Array, "num_ladders 2"],
+    enabled=True,
+) -> Int[Array, "num_ladders 2"]:
+    """Move the up-ladders off the down-ladders when the two independent draws collided.
+
+    `get_ladder_positions` samples a single anchor and lays the level's ladders in one row from
+    it, so the two draws can share a row and overlap on some or all of their tiles — anchors an
+    even distance apart overlap partially. The up-ladders are written to the item map second, so
+    an overlap deletes the down-ladders underneath it and the level loses that much of its way
+    down: `change_floor` only permits DESCEND from a LADDER_DOWN tile. Redrawing with the
+    down-ladder span excluded repairs the level; levels that did not collide keep the position
+    they already drew, and are left bit-identical.
+
+    Args:
+        rng: The same key the up-ladder draw used, so no extra randomness is consumed.
+        static_params: Static map dimensions and player count.
+        config: Level configuration defining valid ladder terrain.
+        map: Block identifiers for the generated level.
+        ladders_down: Down-ladder coordinates already placed on this level.
+        ladders_up: Up-ladder coordinates as first drawn.
+        enabled: Whether this level carries both ladder kinds. Levels missing one of them cannot
+            suffer the overwrite, so their draw is left alone.
+
+    Returns:
+        Up-ladder coordinates clear of the down-ladders, except in the degenerate case where
+        excluding the down-ladder span leaves nowhere legal to put them, when the original
+        draw is kept in preference to placing no ladders at all.
+    """
+    collided = (ladders_down[None, :, :] == ladders_up[:, None, :]).all(-1).any()
+    exclude = (
+        jnp.zeros(static_params.map_size, dtype=bool)
+        .at[ladders_down[:, 0], ladders_down[:, 1]]
+        .set(True)
+    )
+    redrawn = get_ladder_positions(rng, static_params, config, map, exclude=exclude)
+    return jnp.where(jnp.logical_and(collided, enabled), redrawn, ladders_up)
+
+
 def generate_coordination_map(
     rng: chex.PRNGKey,
     block_map: Int[Array, "map_height map_width"],
@@ -399,6 +443,10 @@ def generate_dungeon(
 
     rng, _rng = jax.random.split(rng)
     ladders_up = get_ladder_positions(_rng, static_params, config, map)
+    # Dungeons always carry both ladder kinds, so a collision would delete the way down.
+    ladders_up = resolve_ladder_collision(
+        _rng, static_params, config, map, ladders_down, ladders_up
+    )
     item_map = item_map.at[ladders_up[:, 0], ladders_up[:, 1]].set(ItemType.LADDER_UP.value)
 
     return map, item_map, light_map, ladders_down, ladders_up
@@ -562,13 +610,24 @@ def generate_smoothworld(
     rng, _rng = jax.random.split(rng)
     ladders_down = get_ladder_positions(_rng, static_params, config, map)
 
+    # A level without a down-ladder leaves the item map untouched. Substituting the *block* here
+    # instead would stamp a block id into the item map, where it is not a valid ItemType.
     item_map = item_map.at[ladders_down[:, 0], ladders_down[:, 1]].set(
         ItemType.LADDER_DOWN.value * config.ladder_down
-        + map[ladders_down[:, 0], ladders_down[:, 1]] * (1 - config.ladder_down)
+        + item_map[ladders_down[:, 0], ladders_down[:, 1]] * (1 - config.ladder_down)
     )
 
     rng, _rng = jax.random.split(rng)
     ladders_up = get_ladder_positions(_rng, static_params, config, map)
+    ladders_up = resolve_ladder_collision(
+        _rng,
+        static_params,
+        config,
+        map,
+        ladders_down,
+        ladders_up,
+        enabled=jnp.logical_and(config.ladder_up, config.ladder_down),
+    )
 
     LIGHT_MAP_AROUND_LADDER = TORCH_LIGHT_MAP * (
         1 - config.default_light
@@ -589,9 +648,11 @@ def generate_smoothworld(
     light_map += jsp.signal.convolve(lava_map, z, mode="same")
     light_map = jnp.clip(light_map, 0.0, 1.0)
 
+    # Same here: the overworld has no up-ladder, so this write must preserve whatever the item
+    # map already holds — including the down-ladders, which the up-ladder draw can land on.
     item_map = item_map.at[ladders_up[:, 0], ladders_up[:, 1]].set(
         ItemType.LADDER_UP.value * config.ladder_up
-        + map[ladders_up[:, 0], ladders_up[:, 1]] * (1 - config.ladder_up)
+        + item_map[ladders_up[:, 0], ladders_up[:, 1]] * (1 - config.ladder_up)
     )
 
     return map, item_map, light_map, ladders_down, ladders_up

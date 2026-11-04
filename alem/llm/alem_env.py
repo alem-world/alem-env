@@ -77,6 +77,9 @@ class CraftaxEnv:
         # coordination text and the Request/Give actions.
         wrapper_config = alem_config.get("wrapper", {})
         wrapper_cls = AlemLanguageWrapperSingle if self.num_agents == 1 else AlemLanguageWrapper
+
+        # VLM mode needs rendered frames regardless of debug logging.
+        self.max_image_history = config.agent.get("max_image_history", 0)
         self.wrapper = wrapper_cls(
             self.env,
             self.env_params,
@@ -92,7 +95,9 @@ class CraftaxEnv:
             prompt_mode=config.agent.get("prompt_mode", "specific_collaborative"),
             show_affordances=config.agent.get("show_affordances", False),
             debug=config.eval.get("debug", False),
+            render_images=self.max_image_history > 0,
             use_ascii=wrapper_config.get("use_ascii", False),
+            use_image_scene=wrapper_config.get("use_image_scene", False),
         )
 
         # State tracking

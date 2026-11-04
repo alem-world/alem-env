@@ -1,0 +1,71 @@
+# ============================================================================
+# alem — LLM eval image (vLLM server + evaluation, one container)
+#
+# Serves a model with vLLM (on GPU) and runs a 3-agent Alem evaluation against
+# it (JAX eval pinned to CPU so it never competes with vLLM for the GPU).
+# Requires nvidia-container-toolkit on the host and --gpus at runtime.
+#
+# Build (from repo root):
+#   docker build -f docker/Dockerfile.llm -t alem-llm .
+#
+# Run — small model, single GPU:
+#   docker run --rm --gpus all --shm-size=16g \
+#     -e MODEL_ID=meta-llama/Llama-3.2-1B-Instruct \
+#     -e HF_TOKEN=<token> \
+#     -v ~/.cache/huggingface:/app/.cache/huggingface \
+#     alem-llm eval.num_episodes.alem=5
+#
+# Run — large model, 4 GPUs:
+#   docker run --rm --gpus all --shm-size=64g \
+#     -e MODEL_ID=meta-llama/Llama-3.3-70B-Instruct \
+#     -e VLLM_EXTRA_ARGS="--tensor-parallel-size 4" \
+#     -e HF_TOKEN=<token> alem-llm
+#
+# Env vars: MODEL_ID (required) · HF_TOKEN (gated models) · WANDB_API_KEY ·
+#   WANDB_MODE (default disabled) · VLLM_PORT (8080) · GPU_UTIL (0.90) ·
+#   MAX_MODEL_LEN (32768) · VLLM_EXTRA_ARGS · EVAL_EXTRA_ARGS · SKIP_VLLM
+# ============================================================================
+ARG VLLM_VERSION=v0.19.1
+
+# Base image ships Python 3.12, torch + CUDA, and vLLM pre-installed.
+FROM vllm/vllm-openai:${VLLM_VERSION}
+
+LABEL org.opencontainers.image.title="alem-llm" \
+      org.opencontainers.image.description="vLLM server + LLM evaluation for Alem"
+
+# JAX_PLATFORMS=cpu keeps the eval off the GPU, leaving all VRAM for vLLM.
+ENV JAX_PLATFORMS=cpu \
+    WANDB_MODE=disabled \
+    VLLM_PORT=8080 \
+    GPU_UTIL=0.90 \
+    MAX_MODEL_LEN=32768 \
+    STARTUP_TIMEOUT=1800 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    HF_HOME=/app/.cache/huggingface
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl git \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf "$(which python3)" /usr/local/bin/python
+
+WORKDIR /app
+COPY . .
+
+# The vLLM base ships blinker 1.4 as a distutils package (can't be uninstalled),
+# but wandb -> Flask needs blinker >= 1.6. Force a newer copy into site-packages
+# first so the eval-stack install below sees the requirement already satisfied.
+RUN pip install --no-cache-dir --ignore-installed blinker==1.9.0
+
+# Install only the alem eval stack (CPU JAX + harness). vLLM/torch stay untouched
+# from the base image. numpy>=1.26 / scipy>=1.12 are satisfied by the base's numpy 2.x.
+RUN pip install --no-cache-dir -e ".[baselines-llm]"
+
+COPY docker/entrypoint.llm.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Report healthy once vLLM's model endpoint is up.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=300s --retries=3 \
+    CMD curl -sf "http://localhost:${VLLM_PORT}/v1/models" || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]

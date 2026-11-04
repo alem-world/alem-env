@@ -6,16 +6,27 @@ Based on BALROG prompt_builder implementation
 import re
 import warnings
 from collections import deque
-from typing import List, Optional
+
+from PIL import Image
 
 
 class Message:
-    """Represents a conversation message with role, content, and optional attachment."""
+    """A conversation message with optional media and native reasoning."""
 
-    def __init__(self, role: str, content: str, attachment: object | None = None):
+    def __init__(
+        self,
+        role: str,
+        content: str,
+        attachment: object | None = None,
+        reasoning: str | None = None,
+    ):
         self.role = role  # 'system', 'user', 'assistant'
         self.content = content  # String content of the message
         self.attachment = attachment
+        # What this turn was thinking, kept alongside the text instead of only
+        # folded into it. Chat templates that re-render history look for it
+        # here. See convert_messages in client.py.
+        self.reasoning = reasoning
 
     def __repr__(self):
         return f"Message(role={self.role}, content={self.content}, attachment={self.attachment})"
@@ -30,15 +41,24 @@ class HistoryPromptBuilder:
         max_image_history: int = 1,
         system_prompt: str | None = None,
         max_cot_history: int = 1,
+        image_size: tuple[int, int] | None = None,
+        reasoning_history_mode: str = "inline",
     ):
         self.max_text_history = max_text_history
         self.max_image_history = max_image_history
+        self.image_size = tuple(image_size) if image_size else None
         self.max_history = max(max_text_history, max_image_history)
         self.system_prompt = system_prompt
         self._events = deque(maxlen=self.max_history * 2)
         self._last_short_term_obs = None
         self.previous_reasoning = None
         self.max_cot_history = max_cot_history
+        # "inline" folds a past turn's reasoning into that turn's text, which is
+        # the long-standing behaviour. "structured" leaves the text as the action
+        # alone and lets the client send the reasoning as reasoning_content, for
+        # models whose chat template wants it there (Laguna S 2.1). The reasoning
+        # reaches the model once either way.
+        self.reasoning_history_mode = reasoning_history_mode
 
     def update_instruction_prompt(self, instruction: str):
         """Set the system-level instruction prompt."""
@@ -70,6 +90,11 @@ class HistoryPromptBuilder:
         self._last_short_term_obs = obs["text"].get("short_term_context", "")
         text = long_term_context
         image = obs.get("image", None)
+        if image is not None and self.image_size:
+            # resize() copies, so the evaluator keeps the full-resolution frame
+            # for GIFs and HTML while the model gets the smaller one. BOX averages
+            # the merged pixels; NEAREST would drop whole sprites at this scale.
+            image = image.resize(self.image_size, Image.BOX)
         self._events.append(
             {
                 "type": "observation",
@@ -208,16 +233,16 @@ class HistoryPromptBuilder:
                     if flag in event:
                         del event[flag]
             elif event["type"] == "action":
-                if event.get("reasoning") is not None:
-                    content = (
-                        "Previous plan:\n"
-                        + event["reasoning"]
-                        + "\n\nAction taken: "
-                        + event["action"]
-                    )
-                else:
+                reasoning = event.get("reasoning")
+                if reasoning is None:
                     content = event["action"]
-                message = Message(role="assistant", content=content)
+                elif self.reasoning_history_mode == "structured":
+                    content = "Action taken: " + event["action"]
+                else:
+                    content = (
+                        "Previous plan:\n" + reasoning + "\n\nAction taken: " + event["action"]
+                    )
+                message = Message(role="assistant", content=content, reasoning=reasoning)
             messages.append(message)
 
         return messages
@@ -239,4 +264,6 @@ def create_prompt_builder(config):
         max_text_history=max_text_history,
         max_image_history=config.max_image_history,
         max_cot_history=config.max_cot_history,
+        image_size=config.get("image_size", None),
+        reasoning_history_mode=config.get("reasoning_history_mode", "inline"),
     )

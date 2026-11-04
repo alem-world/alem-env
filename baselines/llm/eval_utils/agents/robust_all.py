@@ -21,11 +21,13 @@ import logging
 import re
 
 try:
+    from ..client import client_returns_native_reasoning
     from .base import BaseAgent
     from .robust_naive import extract_action_multistrategy
 except ImportError:
     from eval_utils.agents.base import BaseAgent
     from eval_utils.agents.robust_naive import extract_action_multistrategy
+    from eval_utils.client import client_returns_native_reasoning
 
 logger = logging.getLogger(__name__)
 
@@ -94,11 +96,15 @@ class RobustAllAgent(BaseAgent):
                 "Scratchpad history must be less than or equal to overall text history to ensure it is included in prompts."
             )
 
-        # Thinking-mode: only for models with a separate reasoning field
-        # (e.g. Qwen3 on vLLM with --reasoning-parser). Must be explicitly
-        # enabled via config.agent.reasoning=True. GPT/Claude models do not
-        # have .reasoning so they should always use the standard CoT path.
-        self.enable_thinking = bool(config.agent.get("reasoning", False))
+        # Thinking-mode: only for models that return a separate reasoning field
+        # (Qwen3 on vLLM with --reasoning-parser, Gemini, OpenAI). Requested via
+        # config.agent.reasoning=True, but gated on the client, because enabling
+        # it removes the "<think>YOUR_REASONING</think>" instruction below. A
+        # client that returns no reasoning field would then produce no reasoning
+        # anywhere. AgentFactory warns when a request is gated off here.
+        self.enable_thinking = bool(
+            config.agent.get("reasoning", False)
+        ) and client_returns_native_reasoning(client_config)
 
         # When True, output format instructions are placed in the system prompt
         # once rather than appended to every observation. Saves tokens over long

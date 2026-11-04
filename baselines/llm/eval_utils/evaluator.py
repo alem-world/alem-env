@@ -158,6 +158,13 @@ class EvaluatorManager:
 
         self.env_names = config.envs.names.split("-")
         self.env_evaluators = {}
+        # Resume, and the only place it is implemented: an episode whose result
+        # JSON already exists is skipped rather than re-run. Combined with
+        # eval.resume_from (which points output_dir at an existing run) this
+        # means re-running an interrupted evaluation continues it instead of
+        # starting over -- which is what makes long runs survivable on batch
+        # schedulers with a walltime cap. A fully complete run exits in seconds.
+        # See EVALUATION.md -> Running at scale.
         self.tasks = []
         for env_name in self.env_names:
             evaluator = Evaluator(
@@ -416,6 +423,7 @@ class Evaluator:
             "input_tokens": 0,
             "output_tokens": 0,
             "reasoning_tokens": 0,
+            "cached_tokens": 0,
             "stop_reason_counts": defaultdict(int),
             "incomplete_response_count": 0,
             "incomplete_response_reasons": defaultdict(int),
@@ -437,6 +445,7 @@ class Evaluator:
             episode_log[f"agent_{i}_input_tokens"] = 0
             episode_log[f"agent_{i}_output_tokens"] = 0
             episode_log[f"agent_{i}_reasoning_tokens"] = 0
+            episode_log[f"agent_{i}_cached_tokens"] = 0
             episode_log[f"agent_{i}_stop_reason_counts"] = defaultdict(int)
             episode_log[f"agent_{i}_incomplete_response_count"] = 0
 
@@ -636,6 +645,9 @@ class Evaluator:
                         episode_log[f"agent_{agent_idx}_reasoning_tokens"] += getattr(
                             response, "reasoning_tokens", 0
                         )
+                        episode_log[f"agent_{agent_idx}_cached_tokens"] += getattr(
+                            response, "cached_tokens", 0
+                        )
                         stop_reason = getattr(response, "stop_reason", None) or "unknown"
                         episode_log["stop_reason_counts"][stop_reason] += 1
                         episode_log[f"agent_{agent_idx}_stop_reason_counts"][stop_reason] += 1
@@ -658,6 +670,7 @@ class Evaluator:
                         episode_log["input_tokens"] += response.input_tokens
                         episode_log["output_tokens"] += response.output_tokens
                         episode_log["reasoning_tokens"] += getattr(response, "reasoning_tokens", 0)
+                        episode_log["cached_tokens"] += getattr(response, "cached_tokens", 0)
 
                     # Trajectory: discrete action indices + text actions.
                     # Standard actions map directly via ACTIONS list. "Give to Agent X"
@@ -1311,14 +1324,27 @@ class Evaluator:
             clients_log = OmegaConf.to_container(self.config.clients, resolve=True)
             if not isinstance(clients_log, list):
                 raise ValueError("config.clients must resolve to a list for episode logging.")
-            # Log the actual runtime enable_thinking (may differ from config default)
+            # enable_thinking is resolved per client, not once for the run, so
+            # log what each slot actually ran with. A mixed team differs slot
+            # by slot.
             for client_cfg in clients_log:
                 if isinstance(client_cfg, dict):
-                    client_cfg["enable_thinking_resolved"] = getattr(
-                        agent_factory,
-                        "_resolved_enable_thinking",
-                        None,
+                    client_cfg["enable_thinking_resolved"] = (
+                        agent_factory._resolve_enable_thinking(client_cfg)
                     )
+            # Same for reasoning_history_mode, which can be set per client and
+            # falls back to the agent default. Worth writing down next to the
+            # score: it decides how prior reasoning is fed back, and a row is
+            # only comparable to another row that ran the same way.
+            for agent_idx, client_cfg in enumerate(clients_log):
+                if not isinstance(client_cfg, dict):
+                    continue
+                client = getattr(
+                    agents[agent_idx] if agent_idx < len(agents) else None, "client", None
+                )
+                client_cfg["reasoning_history_mode_resolved"] = getattr(
+                    client, "reasoning_history_mode", None
+                )
             episode_log["clients"] = clients_log
 
             json_filename = os.path.join(

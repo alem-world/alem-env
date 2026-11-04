@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alem-env"
-version = "0.1.0"
+version = "0.2.1"
 description = "A JAX environment for open-ended multi-agent coordination."
 readme = "README.md"
 requires-python = ">=3.11, <3.13"
@@ -64,6 +64,8 @@ baselines-llm = [
   "openai>=1.0.0",
   "anthropic>=0.40.0",
   "google-genai>=0.3.0",
+  "rliable>=1.2.0",       # bootstrap CIs for leaderboard submissions
+  "pandas<3.0",           # rliable's `arch` dep breaks on pandas 3.x (deprecate_kwarg)
 ]
 dev = [
   "pytest>=8.0.0",

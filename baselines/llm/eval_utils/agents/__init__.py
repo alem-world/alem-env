@@ -1,9 +1,11 @@
 # Handle both relative and absolute imports
+import logging
+
 try:
-    from ..client import create_llm_client
+    from ..client import client_returns_native_reasoning, create_llm_client
     from ..prompt_builder import create_prompt_builder
 except ImportError:
-    from eval_utils.client import create_llm_client
+    from eval_utils.client import client_returns_native_reasoning, create_llm_client
     from eval_utils.prompt_builder import create_prompt_builder
 
 from .chain_of_thought import ChainOfThoughtAgent
@@ -17,6 +19,9 @@ from .robust_cot import RobustCoTAgent
 from .robust_naive import RobustNaiveAgent
 
 
+logger = logging.getLogger(__name__)
+
+
 class AgentFactory:
     """Factory class for creating agents based on configuration."""
 
@@ -27,7 +32,8 @@ class AgentFactory:
     def __init__(self, config):
         self.config = config
         self._validate_clients_config()
-        # Resolve once so the evaluator can read it without races
+        # The config request. What each agent ran with is resolved per client
+        # in create_agent.
         self._resolved_enable_thinking = self._resolve_enable_thinking()
 
     # TODO(cleanup): remove _LEGACY_CLIENT_COMPAT and all references to it once
@@ -102,15 +108,23 @@ class AgentFactory:
             client_cfg = OmegaConf.merge(client_cfg, overrides)
         return client_cfg
 
-    def _resolve_enable_thinking(self):
-        """Resolve the enable_thinking flag for the LLM client.
+    def _resolve_enable_thinking(self, client_cfg=None):
+        """Resolve the enable_thinking flag for one client.
 
-        Only enabled when explicitly set via ``agent.reasoning: true`` in
-        config. This is for models that produce a separate .reasoning field
-        (e.g. Qwen3 on vLLM with --reasoning-parser). GPT and Claude models
-        do not have this field, so thinking mode should not be used with them.
+        Requested via ``agent.reasoning: true``, but resolved against the
+        client. Turning it on removes the visible <think> instruction from the
+        prompt, which only works if the client returns the trace in .reasoning
+        instead. agent.reasoning is one switch for the whole run and the API
+        wrappers set it for every model, so the request often arrives on a
+        client that cannot honour it.
+
+        Pass no client to get the config request alone.
         """
-        return bool(getattr(self.config.agent, "reasoning", False))
+        if not bool(getattr(self.config.agent, "reasoning", False)):
+            return False
+        if client_cfg is None:
+            return True
+        return client_returns_native_reasoning(client_cfg)
 
     def create_agent(self, agent_idx=None):
         agent_type = self.config.agent.type
@@ -131,12 +145,52 @@ class AgentFactory:
         assert isinstance(client_config, dict), (
             f"Expected client config to be a dict, got {type(client_config).__name__}"
         )
-        enable_thinking = self._resolve_enable_thinking()
+        enable_thinking = self._resolve_enable_thinking(client_config)
+        if self._resolved_enable_thinking and not enable_thinking:
+            logger.warning(
+                "agent.reasoning=true but client '%s' (model %s) returns no reasoning "
+                "field, so thinking mode is off for it and the model is asked for a "
+                "visible <think> block instead.",
+                client_config.get("client_name"),
+                client_config.get("model_id"),
+            )
         client_config["enable_thinking"] = enable_thinking
+
+        mode = client_config.get("reasoning_history_mode") or getattr(
+            self.config.agent, "reasoning_history_mode", "inline"
+        )
+        if mode not in ("inline", "structured"):
+            raise ValueError(
+                f"reasoning_history_mode must be 'inline' or 'structured', got {mode!r}"
+            )
+        if mode == "structured":
+            # Nothing else can carry reasoning_content: the hosted
+            # OpenAI-compatible APIs reject unknown message fields, and with
+            # thinking off the reasoning belongs in the visible text anyway.
+            # Refuse rather than quietly fall back, because falling back to
+            # inline would silently change the protocol a run is scored under.
+            client_name = str(client_config.get("client_name", "")).lower()
+            if client_name != "vllm":
+                raise ValueError(
+                    "reasoning_history_mode='structured' needs client_name='vllm', "
+                    f"got {client_name!r} for agent {agent_idx}"
+                )
+            if not enable_thinking:
+                raise ValueError(
+                    "reasoning_history_mode='structured' needs agent.reasoning=true; "
+                    "with thinking off, use 'inline' so the reasoning stays in the "
+                    "visible text"
+                )
+        client_config["reasoning_history_mode"] = mode
         client_config = OmegaConf.create(client_config)
 
         client_factory = create_llm_client(client_config)
-        prompt_builder = create_prompt_builder(self.config.agent)
+        # The prompt builder needs the same mode: it decides whether the
+        # reasoning goes into the assistant turn's text or is left for the
+        # client to send as a field.
+        prompt_builder = create_prompt_builder(
+            OmegaConf.merge(self.config.agent, {"reasoning_history_mode": mode})
+        )
 
         if agent_type == "naive":
             return NaiveAgent(client_factory, prompt_builder)

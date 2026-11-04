@@ -19,7 +19,18 @@ class _ClientProxy:
         self.last_prompt_messages = None
 
     def _capture(self, messages):
-        self.last_prompt_messages = [{"role": m.role, "content": m.content} for m in messages]
+        # Keep the reasoning alongside the text. In structured
+        # reasoning_history_mode it is the only place a past turn's plan
+        # appears, so a capture of content alone would show an assistant turn
+        # as a bare action and read exactly like the bug we were chasing.
+        captured = []
+        for m in messages:
+            entry = {"role": m.role, "content": m.content}
+            reasoning = getattr(m, "reasoning", None)
+            if reasoning:
+                entry["reasoning_content"] = reasoning
+            captured.append(entry)
+        self.last_prompt_messages = captured
 
     def generate(self, messages):
         self._capture(messages)

@@ -21,6 +21,10 @@ agent:
   remember_cot: true
   max_text_history: 8
   max_image_history: 0  # 0 = text-only, >=1 = VLM mode
+  # Size of the frame sent to the model, [width, height].
+  # if max_image_history>0. null = send the render as-is (GIFs keep it either way).
+  # Shrinking might save nothing: some models (e.g. Gemma) encodes to a fixed budget.
+  image_size: null
   max_cot_history: 1
   max_icl_history: 1000
   cache_icl: false
@@ -38,6 +42,15 @@ agent:
   structured_scratchpad: false # if true, we provide a structure to the scratchpad prompt
   structured_communication: false # if true, we provide a structure to the communication prompt
   max_parse_retries: 0  # re-prompts when action parsing fails (0 = no retries, each retry = 1 extra LLM call)
+  # Where a past turn's reasoning is kept when it is fed back to the model.
+  # "inline" writes it into the assistant turn's own text as "Previous plan",
+  # which is what every model on the board has run. "structured" leaves the text
+  # as the action alone and sends the reasoning as reasoning_content, for models
+  # whose chat template reads an empty thinking block as "stop thinking"
+  # (e.g. Laguna S 2.1). Either way the
+  # reasoning reaches the model once. Override per model with
+  # clients.N.reasoning_history_mode when a team is mixed. vLLM, thinking on.
+  reasoning_history_mode: inline
 
 ALG_NAME: "llm"  # Set automatically in eval_alem.py based on agent type and model ID
 ENV_NAME: "Alem-Coop-Symbolic" # Options: Alem-Coop-Symbolic, Alem-Coop-Symbolic-Debug, Alem-Coop-Pixels
@@ -93,7 +106,15 @@ eval:
   num_episodes:
     alem: 20
 
-  num_workers: 4 # set to higher if you have resources and want faster eval
+  # Episodes run concurrently. Each episode has alem.num_agents agents in
+  # flight, so requests hitting your endpoint = num_workers * num_agents.
+  # This is a THROUGHPUT knob only: episode i always uses world seed
+  # EVAL_SEED + i, so changing it cannot change your numbers. Raising it is the
+  # biggest speedup available; what bounds it is your server's KV cache, not
+  # Alem. See EVALUATION.md -> Running at scale.
+  # For larger experiments set this to 20 (or num_episodes) so each eval
+  # runs in parallel. 
+  num_workers: 4
   max_steps_per_episode: 10000  # upper bound only — episodes end early when all agents die (typically ~300 steps)
 
   feedback_on_invalid_action: true
@@ -124,7 +145,6 @@ alem:
   randomize_alpha: false           # Must be false for fixed-difficulty eval (matches RL eval)
 
   wrapper:
-    version: "v0.125-fix-trading" 
     unique_items: true
     precise_location: true  # true: "2 steps north and 3 steps east" (per-axis); false: "5 steps north-east" (Manhattan + combined direction)
     exact_coordinates: true  # true: replace relative location text with coordinates "(x=41, y=23)"
@@ -139,9 +159,16 @@ alem:
     render_downscale: 2     # set to 2 when using pixel_size=64 to match RL GIF quality
     llm_mode: "easy"  # Deprecated. Use agent.prompt_mode instead. Kept for backward compatibility.
     use_ascii: false  # true: replace "You see:" text list with a 9×11 ASCII grid
+    # true: drop the "You see:" text list entirely so a VLM agent reads the local
+    # view off the rendered frame. Facing/Do target, coordination cues, status and
+    # inventory stay as text. Requires agent.max_image_history >= 1; not compatible
+    # with use_ascii.
+    use_image_scene: false
 
 WANDB_MODE: "offline"  # Set to "online" to enable W&B logging, or "offline" to disable
 wandb:
+  # Placeholder: set this (or override wandb.entity=) before running with
+  # WANDB_MODE=online, or wandb.init will fail on an entity that does not exist.
   entity: "<your-wandb-entity>"
   project: "alem"
   group: null

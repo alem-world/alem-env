@@ -16,6 +16,7 @@ Each test exercises a specific rendering guarantee:
 import os
 import sys
 import unittest
+from functools import lru_cache
 from pathlib import Path
 
 _project_root = str(Path(__file__).parent.parent.parent)
@@ -39,6 +40,17 @@ from alem.llm.ascii_map import ASCII_BLOCK, ASCII_ITEM, ASCII_LEGEND, render_asc
 
 
 def _make_wrapper(**kwargs):
+    """Reuse one wrapper per distinct config.
+
+    The env is a static arg to the jitted reset/step, so a fresh env object per
+    test forces a recompile and keeps the old executable alive — slow, and the
+    accumulated executables dominate peak memory. No test mutates the wrapper.
+    """
+    return _build_wrapper(tuple(sorted(kwargs.items())))
+
+
+@lru_cache(maxsize=None)
+def _build_wrapper(kwargs_items):
     config = {
         "max_timesteps": 10000,
         "god_mode": False,
@@ -48,7 +60,7 @@ def _make_wrapper(**kwargs):
     }
     env = make_alem_env(config=config)
     env_params = env.default_params
-    return AlemLanguageWrapper(env, env_params, use_ascii=True, **kwargs)
+    return AlemLanguageWrapper(env, env_params, use_ascii=True, **dict(kwargs_items))
 
 
 def _reset(wrapper, seed=42):

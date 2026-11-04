@@ -219,6 +219,84 @@ python baselines/llm/eval_alem.py \
     agent.max_image_history=0 agent.max_text_history=16
 ```
 
+## Serving an open-weight model well
+
+The quick-start above serves a 1B model with defaults, which is fine for a smoke
+test. We have some instructions below for larger experiments.
+
+### Always enable prefix caching
+
+```bash
+vllm serve <model> --enable-prefix-caching ...
+```
+
+Alem's prompt is a long fixed system prompt plus a rolling history, and every
+agent re-sends a near-identical prefix on every step for hundreds of steps. With
+prefix caching almost all of that prefill becomes a cache hit. 
+
+### The reasoning parser must match, exactly
+
+`agent.reasoning=True` only makes sense when the server actually emits a separate
+reasoning field, which for vLLM means `--reasoning-parser <name>`.
+
+
+### Read `action_parse_rate` before you read the score
+
+`eval/action_parse_rate` is the first number to look at on any new model. A low
+value means the score is throttled by output formatting, not capability, and the
+fix is a serving flag, usually the chat template or the reasoning parser. Do a
+short run first and confirm the parse rate is high before spending a full
+evaluation on it.
+
+## Docker (one-command eval)
+
+If you'd rather not install anything locally, the [`alem-llm`](../../docker/Dockerfile.llm)
+image serves your model with vLLM **and** runs a 3-agent evaluation against it in a
+single `docker run`. It needs [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+on the host and `--gpus` at runtime.
+
+```bash
+# Build once (from the repo root)
+docker build -f docker/Dockerfile.llm -t alem-llm .
+
+# Serve + evaluate. Only MODEL_ID is required; mount the HF cache to download once.
+docker run --rm --gpus all --shm-size=16g \
+    -e MODEL_ID=meta-llama/Llama-3.2-1B-Instruct \
+    -e HF_TOKEN=$HF_TOKEN \
+    -v ~/.cache/huggingface:/app/.cache/huggingface \
+    alem-llm eval.num_episodes.alem=5
+```
+
+The entrypoint ([`docker/entrypoint.llm.sh`](../../docker/entrypoint.llm.sh)) starts
+`vllm serve`, waits for the `/v1/models` endpoint, then launches `eval_alem.py` with all
+three agents pointed at that server. Trailing arguments and `EVAL_EXTRA_ARGS` are passed
+through as Hydra overrides, so everything in [Configuration](#configuration) still applies
+(e.g. `alem.coordination_difficulty=hard`, `agent.type=robust_cot`).
+
+| Env var | Default | Purpose |
+|---------|---------|---------|
+| `MODEL_ID` | *(required)* | HuggingFace model id served to all 3 agents |
+| `HF_TOKEN` | — | HuggingFace token (needed for gated models) |
+| `WANDB_API_KEY` / `WANDB_MODE` | `disabled` | Set both to log the run to W&B (`WANDB_MODE=online`) |
+| `VLLM_EXTRA_ARGS` | `--tensor-parallel-size 1` | Extra `vllm serve` flags; use `--tensor-parallel-size N` for large models (raise `--shm-size` too) |
+| `GPU_UTIL` | `0.90` | vLLM GPU memory fraction |
+| `MAX_MODEL_LEN` | `32768` | Max context length |
+| `SKIP_VLLM` | `0` | Set to `1` to reuse an already-running server at `VLLM_PORT` instead of starting one |
+
+```bash
+# Large model across 4 GPUs
+docker run --rm --gpus all --shm-size=64g \
+    -e MODEL_ID=meta-llama/Llama-3.3-70B-Instruct \
+    -e VLLM_EXTRA_ARGS="--tensor-parallel-size 4" \
+    -e HF_TOKEN=$HF_TOKEN \
+    -v ~/.cache/huggingface:/app/.cache/huggingface \
+    alem-llm
+```
+
+For RL training there's a parallel [`alem-rl`](../../docker/Dockerfile.rl) image
+(`docker run --gpus all alem-rl ippo_rnn TOTAL_TIMESTEPS=1e4 ...`). See the main
+[README → Docker](../../README.md#docker) for the full overview.
+
 ## Configuration
 
 All settings live in `config/config.yaml` and can be overridden via Hydra CLI.

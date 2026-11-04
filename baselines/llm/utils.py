@@ -59,6 +59,7 @@ def collect_and_summarize_results(output_dir):
             "input_tokens": 0,
             "output_tokens": 0,
             "reasoning_tokens": 0,
+            "cached_tokens": 0,
             "incomplete_response_count": 0,
             "incomplete_response_reasons": defaultdict(int),
             "stop_reason_counts": defaultdict(int),
@@ -114,6 +115,9 @@ def collect_and_summarize_results(output_dir):
                     summary[key]["input_tokens"] += episode_log.get("input_tokens", 0)
                     summary[key]["output_tokens"] += episode_log.get("output_tokens", 0)
                     summary[key]["reasoning_tokens"] += episode_log.get("reasoning_tokens", 0)
+                    # Cached input bills at a fraction of the input rate, so
+                    # input_tokens on its own overstates what a run cost.
+                    summary[key]["cached_tokens"] += episode_log.get("cached_tokens", 0)
                     summary[key]["incomplete_response_count"] += episode_log.get(
                         "incomplete_response_count", 0
                     )
@@ -456,6 +460,8 @@ def save_summary_stats(summary, output_dir):
         clean_data["avg_reasoning_tokens"] = float(
             data.get("reasoning_tokens", 0) / num_valid_episodes
         )
+        clean_data["cached_tokens"] = float(data.get("cached_tokens", 0))
+        clean_data["avg_cached_tokens"] = float(data.get("cached_tokens", 0) / num_valid_episodes)
         clean_data["incomplete_response_count"] = int(data.get("incomplete_response_count", 0))
         clean_data["avg_incomplete_responses"] = float(
             data.get("incomplete_response_count", 0) / num_valid_episodes

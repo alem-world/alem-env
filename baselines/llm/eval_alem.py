@@ -33,6 +33,7 @@ from utils import (
     setup_environment,
 )
 
+from alem import LLM_STACK_VERSION
 from alem.alem_coop.alem_state import StaticEnvParams
 
 
@@ -114,7 +115,11 @@ def main(config: DictConfig):
     resume = wandb_section.get("resume")
     notes = wandb_section.get("notes")
 
-    llm_interface_version = config.get("alem", {}).get("wrapper", {}).get("version", "unknown")
+    # The wrapper and the agent harness are one LLM-facing interface and share a
+    # version, tracked separately from the env package version.
+    llm_interface_version = (
+        config.get("alem", {}).get("wrapper", {}).get("version") or LLM_STACK_VERSION
+    )
     tags = list(set(tags + [StaticEnvParams.version, llm_interface_version]))
 
     alem_cfg = config.get("alem", {})

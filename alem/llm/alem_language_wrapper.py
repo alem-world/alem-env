@@ -809,7 +809,7 @@ You must survive — if your health reaches zero you die, and if all agents die 
 - **Facing**: your facing direction is set by your last movement action and persists until you move again. **Do** always targets the tile in your current facing direction.
 - **Do** is your main interaction: face a tile and use the **Do** action on exactly that tile to chop trees, mine ore, attack creatures, drink water, open chests, or revive a downed teammate. If the faced tile contains a downed teammate, Do revives them. If the faced tile contains a living teammate, Do targets that teammate instead and can cause friendly fire.{_do_coord_note}
 - **Crafting**: stand next to (including diagonally) the required station and use the craft action; you do NOT need to face it. Diamond items always require an adjacent epic forge, not a table.
-- **Placing**: face the target tile, then use the place action. Tables and furnaces need an empty non-solid tile that is not water or lava; stone can also be placed into water (costs 1 stone). Place Plant puts a sapling on the faced tile. Place Torch lights dark areas.
+- **Placing**: face the target tile, then use the place action. Tables and furnaces need an empty non-solid tile that is not water or lava; stone can also be placed into water or lava (costs 1 stone). Mine the placed stone with a pickaxe to leave a walkable path across the water or lava. Place Plant puts a sapling on the faced tile. Place Torch lights dark areas.
 - **Ranged combat**: use Shoot Arrow while facing a creature (requires a bow + arrows). Bows are found in dungeon chests.
 - **Elite mobs** are tougher and deal more damage;{_elite_coord_note}
 - **Request/Give**: use Request [Resource] to broadcast a resource request to teammates for 10 turns; teammates can use Give to Agent X to transfer one unit of the requested resource directly — no adjacency required, works at any distance. Give only appears as an available action when a teammate has an active Request.
@@ -1021,8 +1021,15 @@ class AlemLanguageWrapper:
         show_affordances: If True, append the list of legal action names to
             each per-turn observation (the <all_actions> block in the system
             prompt becomes optional via include_all_actions).
-        exact_coordinates: If True, replace relative location text with
-            absolute coordinates "(x=C, y=R)" for all reported locations.
+        exact_coordinates: If True, append absolute coordinates "(x=C, y=R)"
+            to every reported location. On by default: the shipped config sets
+            it, and agents rely on coordinates to name a tile to a teammate,
+            which relative bearings cannot do (they are relative to the
+            speaker, so they mean a different tile to the listener).
+        precise_location: If True, describe offsets per axis ("2 steps north
+            and 3 steps east"); if False, one combined direction and a
+            Manhattan distance ("5 steps north-east"). On by default to match
+            the shipped config.
         use_ascii: If True, render the local view as an ASCII grid instead of
             the "You see:" text list.
     """
@@ -1035,16 +1042,18 @@ class AlemLanguageWrapper:
         prompt_mode="specific_collaborative",
         max_episode_steps=10000,
         unique_items=True,
-        precise_location=False,
-        exact_coordinates=False,
+        precise_location=True,
+        exact_coordinates=True,
         egocentric=False,
         skip_items=None,
         edge_only_items=None,
         render_pixel_size=None,
         render_downscale=1,
         debug=False,
-        show_affordances=False,
+        render_images=False,
+        show_affordances=True,
         use_ascii=False,
+        use_image_scene=False,
     ):
         """Configure symbolic-to-language conversion and rendering options.
 
@@ -1060,11 +1069,16 @@ class AlemLanguageWrapper:
             egocentric: Whether directions are relative to player facing.
             skip_items: Block names omitted from visible-object descriptions.
             edge_only_items: Block names reported only at region edges.
-            render_pixel_size: Tile size used by optional debug rendering.
-            render_downscale: Integer scale reduction for debug frames.
+            render_pixel_size: Tile size used by optional pixel rendering.
+            render_downscale: Integer scale reduction for rendered frames.
             debug: Whether to retain textures and verbose render data.
+            render_images: Whether to render per-agent pixel frames. Implied by
+                debug; set independently to feed a VLM without debug logging.
             show_affordances: Whether observations list currently legal actions.
             use_ascii: Whether local views use the ASCII renderer.
+            use_image_scene: Whether to drop the "You see:" object list so a VLM
+                agent reads the local view off the rendered frame instead.
+                Mutually exclusive with use_ascii; requires rendered images.
         """
         self.env = env
         self.env_params = env_params
@@ -1075,7 +1089,23 @@ class AlemLanguageWrapper:
         self.prompt_mode = prompt_mode
         self.show_affordances = show_affordances
         self.debug = debug
+        self.render_images = bool(debug or render_images)
         self.use_ascii = use_ascii
+        self.use_image_scene = use_image_scene
+
+        # Dropping the object list without a frame to replace it would leave the
+        # agent with no local view at all, and still look like a normal run.
+        if use_image_scene:
+            if not self.render_images:
+                raise ValueError(
+                    "use_image_scene=True requires rendered frames; set "
+                    "agent.max_image_history >= 1 (or eval.debug=True)."
+                )
+            if use_ascii:
+                raise ValueError(
+                    "use_image_scene=True and use_ascii=True both replace the local "
+                    "view; enable at most one."
+                )
 
         # Get number of agents from the environment
         self.num_agents = env.static_env_params.player_count
@@ -1091,7 +1121,7 @@ class AlemLanguageWrapper:
         self.exact_coordinates = exact_coordinates
         self.egocentric = egocentric  # True: ahead/behind/left/right, False: north/south/east/west
         self.skip_items = skip_items if skip_items is not None else ["grass", "sand", "path"]
-        self.edge_only_items = edge_only_items if edge_only_items is not None else []
+        self.edge_only_items = edge_only_items if edge_only_items is not None else ["water"]
 
         # Create block type name mapping
         self.block_id_to_name = {block.value: block.name.lower() for block in BlockType}
@@ -1099,12 +1129,12 @@ class AlemLanguageWrapper:
         # Specialization names
         self.spec_names = {s.value: s.name.lower() for s in Specialization}
 
-        # Player-specific textures for pixel rendering (only loaded when debug=True)
+        # Player-specific textures for pixel rendering (only loaded when rendering)
         self.render_pixel_size = (
             render_pixel_size if render_pixel_size is not None else BLOCK_PIXEL_SIZE_AGENT
         )
         self.render_downscale = render_downscale
-        if self.debug:
+        if self.render_images:
             texture_set = TEXTURES[self.render_pixel_size]
             self.player_specific_textures = load_player_specific_textures(
                 texture_set, self.num_agents
@@ -1298,7 +1328,7 @@ class AlemLanguageWrapper:
                 short_term_context = short_term_context + "\n\n" + affordances
 
         img = None
-        if self.debug:
+        if self.render_images:
             pixels = render_alem_pixels(
                 state,
                 block_pixel_size=self.render_pixel_size,
@@ -1712,6 +1742,12 @@ class AlemLanguageWrapper:
             obs = f"Facing: {facing_name}.\n Do target: {target_name}."
         else:
             obs = "Facing: none."
+
+        # A VLM agent reads the object list off the rendered frame instead. Facing
+        # and Do target still ship as text: they drive the Do action and are not
+        # reliably legible from a sprite.
+        if self.use_image_scene:
+            return obs.strip()
 
         # Object list (reuses shared scan logic, see _scan_visible_objects)
         obj_info_list = self._scan_visible_objects(state, player_idx, self.skip_items)

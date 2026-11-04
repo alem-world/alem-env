@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any
 import jax.numpy as jnp
 from flax import struct
 
+from alem._version import __version__
+
 if TYPE_CHECKING:
     from jaxtyping import Array, Bool, Float, Int
 
@@ -419,7 +421,7 @@ class EnvParams:
 
 @struct.dataclass
 class StaticEnvParams:
-    version: str = "v0.13741-fix-construction-more-metrics"
+    version: str = f"v{__version__}"
     map_size: tuple[int, int] = (48, 48)
     num_levels: int = 9
     player_count: int = 3
