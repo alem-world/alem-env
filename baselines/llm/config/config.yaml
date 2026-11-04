@@ -141,7 +141,9 @@ alem:
   soft_specialization: true        # match RL
   shared_reward: false             # match RL 
   specialist_efficiency: 1.0       # Success rate for specialists (matches RL eval)
-  non_specialist_efficiency: 0.2   # Success rate for non-specialists (matches RL eval)
+  non_specialist_efficiency: 0.2   # Only used when coordination_difficulty is none;
+                                   # otherwise the preset overwrites it with 1 - alpha
+                                   # (0.70 easy / 0.40 medium / 0.10 hard), as in RL eval
   randomize_alpha: false           # Must be false for fixed-difficulty eval (matches RL eval)
 
   wrapper:
