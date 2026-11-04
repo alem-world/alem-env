@@ -28,7 +28,7 @@
 
 ## News
 
-- **Nov 2026 - Accepted at NeurIPS 2026**, Datasets and Benchmarks Track. 🎉 
+- **Nov 2026 - Accepted at NeurIPS 2026**, Evaluations and Datasets Track. 🎉 
 - **Sep 2026 - New entries on the [leaderboard](https://alem-world.github.io/leaderboard.html)**: GPT-6 Astra, Nemotron 3 Super 120B-A12B, MiniMax M2.7, Laguna S 2.1, Qwen 3.8 Flash-Next, GLM 5.3 Flash, and a 10B-step MARL baseline and human baselines. 🎉 
 - **Aug 2026 - Oral at the [RLVG 2026 workshop](https://sites.google.com/view/rlvg-2026/home)** (Reinforcement Learning and Video Games) at RLC 2026. 🎉 
 

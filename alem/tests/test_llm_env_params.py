@@ -37,12 +37,16 @@ class TestLLMEnvSpecialisationParams(unittest.TestCase):
             {"coordination_difficulty": "none", "num_agents": 3, "non_specialist_efficiency": 0.33}
         )
         self.assertAlmostEqual(float(env.default_params.non_specialist_efficiency), 0.33, places=4)
-        env = make_alem_env({"coordination_difficulty": "none", "num_agents": 3})
-        self.assertAlmostEqual(
-            float(env.default_params.non_specialist_efficiency),
-            float(EnvParams().non_specialist_efficiency),
-            places=4,
-        )
+        for cfg in (
+            {"coordination_difficulty": "none", "num_agents": 3},
+            {"coordination_difficulty": "none", "num_agents": 3, "non_specialist_efficiency": None},
+        ):
+            env = make_alem_env(cfg)
+            self.assertAlmostEqual(
+                float(env.default_params.non_specialist_efficiency),
+                float(EnvParams().non_specialist_efficiency),
+                places=4,
+            )
 
 
 if __name__ == "__main__":

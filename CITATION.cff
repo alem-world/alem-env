@@ -36,8 +36,9 @@ keywords:
 preferred-citation:
   type: conference-paper
   title: "Benchmarking Open-Ended Multi-Agent Coordination in Language Agents"
+  collection-title: "The Fortieth Annual Conference on Neural Information Processing Systems Evaluations and Datasets Track"
   conference:
-    name: "Advances in Neural Information Processing Systems (NeurIPS) 2026, Datasets and Benchmarks Track"
+    name: "The Fortieth Annual Conference on Neural Information Processing Systems Evaluations and Datasets Track"
   authors:
     - family-names: Tessera
       given-names: Kale-ab Abebe

@@ -71,14 +71,17 @@ def make_alem_env(config):
     env_kwargs["soft_specialization"] = config.get("soft_specialization", True)
     env_kwargs["shared_reward"] = config.get("shared_reward", False)
     env_kwargs["specialist_efficiency"] = config.get("specialist_efficiency", 1.0)
-    env_kwargs["non_specialist_efficiency"] = config.get("non_specialist_efficiency", 0.2)
     env_kwargs["randomize_alpha"] = config.get("randomize_alpha", False)
+    # None (the config default) leaves it to the difficulty preset below, or to
+    # EnvParams' own default when there is no difficulty.
+    if config.get("non_specialist_efficiency") is not None:
+        env_kwargs["non_specialist_efficiency"] = config["non_specialist_efficiency"]
 
     # Coordination settings. Applied last so the difficulty preset overwrites
     # the values above (soft_specialization, non_specialist_efficiency = 1 - alpha,
     # so 0.70 / 0.40 / 0.10) exactly as RL eval does. Up to v0.2.1 the config's
     # non_specialist_efficiency was applied after the preset, pinning LLM runs
-    # to 0.20 at every difficulty. The config value now only applies when
+    # to 0.20 at every difficulty. A config value now only applies when
     # coordination_difficulty is "none".
     coordination_difficulty = config.get("coordination_difficulty", "none")
     if coordination_difficulty != "none":
