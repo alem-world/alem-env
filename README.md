@@ -350,15 +350,30 @@ uv run python examples/play_alem.py --players 3 --coord easy --seed 42
 uv run python examples/play_alem.py --players 2 --coord hard --god
 ```
 
-| Key         | Action           |
-| ----------- | ---------------- |
-| `W A S D`   | Move             |
-| `Space`     | Do / interact    |
-| `Tab`       | Sleep            |
-| `E`         | Rest             |
-| `.` / `,`   | Descend / ascend |
-| `Backspace` | Give to teammate |
-| `Q`         | No-op            |
+The window shows the map (framed in the colour of the player whose turn it is), a
+status strip with that player's stat bars, inventory and what they are facing, and a
+sidebar listing the team's open requests plus every key, drawn white when it would work
+right now and faded when it would not. The window sizes itself to the screen (`--size 64` for a smaller one).
+
+| Key                    | Action                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `W A S D`              | Move / turn to face                                                                  |
+| `Space`                | Do / interact with the faced tile                                                    |
+| `Tab` / `E` / `Q`      | Sleep / rest / skip turn                                                             |
+| `.` / `,`              | Descend / ascend a ladder                                                            |
+| `R T F P J`            | Place stone / table / furnace / sapling / torch                                      |
+| `1`–`4`, `5`–`8`       | Craft pickaxe, sword (wood / stone / iron / diamond)                                 |
+| `Y U O [`              | Craft iron armour / diamond armour / arrows / torches                                |
+| `I` / `G`              | Shoot arrow / cast spell                                                             |
+| `Z X C V B N`          | Drink red / green / blue / pink / cyan / yellow potion                               |
+| `M K L ;`              | Read book / enchant sword / armour / bow                                             |
+| `]` `-` `=`            | Level up dexterity / strength / intelligence                                         |
+| `F1`–`F9`              | Ask the team for food, drink, wood, stone, iron, coal, diamond, ruby, sapphire       |
+| `Backspace` / `Delete` | Give 1 unit to the lower- / higher-numbered other player (while they have a request) |
+| `9` `0` `` ` ``        | Build shelter / forge / beacon at a construction site                                |
+
+The full interface walkthrough, the human-study runner (`examples/play_with_human_interface.py`)
+and its output format are in [`PLAY_WITH_HUMAN_INTERFACE.md`](PLAY_WITH_HUMAN_INTERFACE.md).
 
 The game advances after all players have chosen an action.
 

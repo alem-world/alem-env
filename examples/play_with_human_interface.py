@@ -24,8 +24,11 @@ Files land in ``outputs/play_with_human_interface/<session_id>/`` and every line
 written, so a crash or Ctrl+C loses nothing. See PLAY_WITH_HUMAN_INTERFACE.md for the full protocol
 (consent, practice runs, breaks, backing up and analysing data).
 
-Controls are identical to play_alem.py (WASD move, Space do, E rest, ... see its
-docstring for the full list), plus:
+Controls are identical to play_alem.py (WASD move, Space do, E rest, F1-F9 request,
+Backspace/Delete give, ... see its docstring for the full list). The window — map,
+status strip, team/request panel and full key reference — is described in
+PLAY_WITH_HUMAN_INTERFACE.md ("What's on screen"). Holding a key keeps acting, player
+after player (``--no-key-repeat`` disables that for one-human-per-seat sessions). Extra keys:
 
     ENTER   start the next episode (between episodes)
     ESC     pause menu — resume, save a checkpoint, reload the last checkpoint,
@@ -83,6 +86,15 @@ HEADLINE_METRICS = [
     "Team/reward_pct_of_max",
 ]
 
+# The reward-based metrics we report as the headline result for a session:
+# team reward as a % of the max achievable reward, split into non-coordination
+# ("base"), coordination-only ("coord"), and combined ("total").
+EVAL_METRICS = {
+    "base": "Team/normal_reward_pct_of_max",
+    "coord": "Team/coord_reward_pct_of_max",
+    "total": "Team/reward_pct_of_max",
+}
+
 # Sentinel episode index for the (unscored) practice round.
 PRACTICE_EP_IDX = -1
 # Fixed world seed for the practice round, distinct from the default eval-seed
@@ -118,19 +130,27 @@ with your institution's actual approved text — see PLAY_WITH_HUMAN_INTERFACE.m
 # self-contained.
 CONTROLS_TEXT = """
 ## Controls (keyboard)
-Players take turns on one keyboard: the highlighted player at the top of the screen acts, then the next. The world advances once every player has chosen. You control the player centred on screen.
-- Move: W A S D  (north / west / south / east). Moving into a wall just turns you to face it.
-- Do / interact: Space  — acts on the tile you face (chop, mine, attack, drink, open chest, revive)
-- Sleep: Tab      Rest: E      Skip turn / no-op: Q
-- Descend / Ascend: .  /  ,
-- Place: R Stone · T Table · F Furnace · P Plant · J Torch
-- Craft pickaxe: 1 Wood · 2 Stone · 3 Iron · 4 Diamond
-- Craft sword: 5 Wood · 6 Stone · 7 Iron · 8 Diamond
-- Craft armour: Y Iron · U Diamond      Craft: O Arrow · [ Torch
-- Combat: I Shoot Arrow · G Cast Spell
-- Request a resource from the team: F1–F9 (Food … Sapphire)
-- Give held resource to a teammate: Backspace
-- Build: 9 Shelter · 0 Forge · ` Beacon
+Players take turns on one keyboard: the player named in the box at the top-left of the map (and boxed in the top bar) acts, then the next. The world advances once every player has chosen. The map is centred on you and framed in your colour.
+- Move / turn: W A S D (north / west / south / east). Moving into a blocked tile just turns you to face it. The line under the map always tells you what you are facing and what it needs.
+- Do / interact: Space — acts on the tile you face (chop, mine, attack, drink, open chest, revive a downed teammate)
+- Sleep: Tab (regain energy)      Rest: E (regain health)      Skip turn: Q
+- Descend / Ascend a ladder: .  /  ,  (the whole team moves together; the ladder down opens after 8 monster kills on the floor)
+- Place: R Stone · T Table · F Furnace · P Plant sapling · J Torch
+- Craft pickaxe (next to a table): 1 Wood · 2 Stone · 3 Iron (+furnace) · 4 Diamond (epic forge, together)
+- Craft sword (next to a table): 5 Wood · 6 Stone · 7 Iron (+furnace) · 8 Diamond (epic forge, together)
+- Craft armour: Y Iron · U Diamond      Craft: O Arrows · [ Torches
+- Fight: I Shoot arrow (needs a bow from a chest + arrows) · G Cast spell (after reading a book)
+- Potions: Z Red · X Green · C Blue · V Pink · B Cyan · N Yellow (each colour's effect is random per world; test when safe)
+- Magic: M Read book · K Enchant sword · L Enchant armour · ; Enchant bow (at an enchantment table, costs 9 mana + 1 gem)
+- Level up (spends 1 XP, earned per new floor): ] Dexterity · - Strength · = Intelligence
+- Ask the team for a resource: F1 Food · F2 Drink · F3 Wood · F4 Stone · F5 Iron · F6 Coal · F7 Diamond · F8 Ruby · F9 Sapphire. Teammates see it for 10 steps (press again to renew).
+- Give 1 unit to a teammate who has an open request: Backspace gives to the lower-numbered other player, Delete to the higher-numbered one (P1: Bksp→P2, Del→P3 · P2: Bksp→P1, Del→P3 · P3: Bksp→P1, Del→P2). The sidebar names who each key reaches and draws it white when it would work.
+- Build at a construction site (face it): 9 Shelter · 0 Forge · ` Beacon
+
+## Reading the screen
+- Sidebar: every key, drawn white when that action would work right now and faded when it would not; the TEAM block shows each player's health and open request and which Give key reaches them.
+- Map borders: green = soft coordination (works alone, bonus together) · cyan = hard coordination (fails alone) · orange dashed = handover (one starts, another finishes in time) · the number is how many players it needs · red outline + gold tint = elite creature (the facing line says whether it is soft or hard).
+- Bottom-left: recent rewards, damage and achievements.
 
 ## During the session
 - ENTER starts each episode · ESC opens the pause menu (resume / save / reload / quit) · close the window to end the session.
@@ -365,7 +385,7 @@ def run_session(args):
     if args.headless:
         os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
-    from play_alem import AlemRenderer
+    from play_alem import AlemRenderer, action_name, resolve_block_size, window_size_for
 
     from alem.alem_coop.alem_state import EnvParams, get_coordination_params
     from alem.alem_coop.constants import (
@@ -470,8 +490,11 @@ def run_session(args):
 
     block_px = BLOCK_PIXEL_SIZE_HUMAN
     player_textures = load_player_specific_textures(TEXTURES[block_px], n)
+    size = resolve_block_size(args.size, n)
+    print(f"Window: {window_size_for(size, n)} px ({size} px per block; override with --size)")
     renderer = AlemRenderer(
-        env, env_params, static_params, player_textures, pixel_render_size=args.size // block_px
+        env, env_params, static_params, player_textures,
+        pixel_render_size=size / block_px, key_repeat=args.key_repeat,
     )
     clock = pygame.time.Clock()
 
@@ -689,7 +712,7 @@ def run_session(args):
                         {
                             "player": current,
                             "id": int(action),
-                            "name": Action(action).name,
+                            "name": action_name(action),
                             "decision_ms": int((now - decision_t0) * 1000),
                             "auto": auto,
                         }
@@ -838,6 +861,7 @@ def run_session(args):
 
         print(f"{ep_label} {status}: {env_steps} env steps, {record['duration_s'] / 60:.1f} min")
         _print_metrics_line(metrics)
+        _print_eval_metrics_line(metrics)
         return status, record
 
     if args.practice and resumed_meta is None:
@@ -886,6 +910,8 @@ def run_session(args):
     if episodes:
         print(f"\nSession {session_id}: {len(episodes)} episode(s)")
         _print_summary(episodes)
+        print("Eval metrics (reward % of max — base/coord/total):")
+        _print_eval_summary(episodes)
     print(f"\nData written to {out_dir}")
     print("Aggregate all sessions with: python examples/play_with_human_interface.py --aggregate")
 
@@ -896,6 +922,13 @@ def _print_metrics_line(metrics):
         if key in metrics:
             parts.append(f"{key.split('/')[1]} {100 * metrics[key]:.1f}%")
     print("  " + "  |  ".join(parts))
+
+
+def _print_eval_metrics_line(metrics):
+    parts = [
+        f"{label} {100 * metrics[key]:.1f}%" for label, key in EVAL_METRICS.items() if key in metrics
+    ]
+    print("  eval  " + "  |  ".join(parts))
 
 
 def _print_summary(records):
@@ -916,6 +949,21 @@ def _print_summary(records):
         f"  {'episode length':<40s} {statistics.mean(steps):6.0f} steps, "
         f"{statistics.mean(mins):.1f} min"
     )
+
+
+def _print_eval_summary(records):
+    """Mean ± std of EVAL_METRICS (base/coord/total reward % of max) across records."""
+    for label, key in EVAL_METRICS.items():
+        vals = [
+            r["metrics"][key]
+            for r in records
+            if isinstance(r["metrics"].get(key), (int, float))
+        ]
+        if not vals:
+            continue
+        mean = 100 * statistics.mean(vals)
+        std = 100 * statistics.stdev(vals) if len(vals) > 1 else 0.0
+        print(f"  {label:<10s}{'(' + key + ')':<34s} {mean:6.1f}% ± {std:.1f}")
 
 
 def _load_all_episodes(root: Path):
@@ -945,6 +993,7 @@ def aggregate(root: Path):
         participants = {r["participant"] for r in recs}
         print(f"── {diff} — {len(recs)} episode(s), {len(participants)} participant(s)/team(s)")
         _print_summary(recs)
+        _print_eval_summary(recs)
         for r in recs:
             pct = 100 * r["metrics"].get("Team/achievement_pct", 0.0)
             print(
@@ -1014,7 +1063,14 @@ def parse_args(argv):
         help="Env step cap per episode (default: 10000, the protocol; lower it for pilots)",
     )
     parser.add_argument("--god", action="store_true", help="God mode (breaks protocol; pilots only)")
-    parser.add_argument("--size", type=int, default=128, help="Display block size px (default: 128)")
+    parser.add_argument(
+        "--size", type=int, default=None,
+        help="Display block size in px (default: the largest that fits the screen; e.g. 64 or 128)",
+    )
+    parser.add_argument(
+        "--no-key-repeat", dest="key_repeat", action="store_false",
+        help="Stop a held key from auto-repeating (by default holding a key keeps acting, player after player)",
+    )
     parser.add_argument("--fps", type=int, default=60, help="Target FPS (default: 60)")
     parser.add_argument(
         "--out", type=str, default="outputs/play_with_human_interface", help="Results root directory"

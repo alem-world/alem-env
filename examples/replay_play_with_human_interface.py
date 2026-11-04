@@ -158,7 +158,7 @@ def main(args):
 
     import pygame
 
-    from play_alem import AlemRenderer
+    from play_alem import AlemRenderer, resolve_block_size
 
     from alem.alem_coop.constants import (
         BLOCK_PIXEL_SIZE_HUMAN,
@@ -185,8 +185,9 @@ def main(args):
 
     block_px = BLOCK_PIXEL_SIZE_HUMAN
     player_textures = load_player_specific_textures(TEXTURES[block_px], n)
+    size = resolve_block_size(args.size, n)
     renderer = AlemRenderer(
-        env, env_params, static_params, player_textures, pixel_render_size=args.size // block_px
+        env, env_params, static_params, player_textures, pixel_render_size=size / block_px
     )
     clock = pygame.time.Clock()
 
@@ -215,7 +216,10 @@ def parse_args(argv):
         "directory (default: 0)",
     )
     parser.add_argument("--player", type=int, default=0, help="Viewpoint to render (default: 0)")
-    parser.add_argument("--size", type=int, default=128, help="Display block size px (default: 128)")
+    parser.add_argument(
+        "--size", type=int, default=None,
+        help="Display block size in px (default: the largest that fits the screen; 64 when headless)",
+    )
     parser.add_argument("--fps", type=int, default=20, help="Initial playback speed (default: 20)")
     parser.add_argument("--paused", action="store_true", help="Start paused instead of auto-playing")
     parser.add_argument(

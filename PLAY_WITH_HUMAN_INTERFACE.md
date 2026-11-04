@@ -47,6 +47,14 @@ want to report.
    changing this file. On a machine with a single GPU that also drives the
    desktop, force `JAX_PLATFORMS=cpu` for headless smoke tests to avoid the
    video driver fighting JAX for VRAM.
+5. **Print the handout.** `examples/participant_handout.md` (and the `.pdf` next
+   to it) is the exact briefing the game shows on screen — the agents' game
+   rules plus the keyboard reference — so each player can keep a copy at the
+   desk. Regenerate it after changing the rules or controls:
+
+   ```bash
+   python -c "import sys; sys.path.insert(0, 'examples'); from play_with_human_interface import build_rules_text; print('# Alem — participant handout\n\n' + build_rules_text(3, True))" > examples/participant_handout.md
+   ```
 
 ## Running a session
 
@@ -65,33 +73,115 @@ JAX_PLATFORMS=cpu python examples/play_with_human_interface.py --bot --headless 
 ```
 
 Hotseat flow: players take turns on one keyboard; the world advances once every
-player has acted. The highlighted player at the top of the screen is the one
-who currently acts, and the view is centred on them. For a genuine coordination
-session, seat one human per player at the same keyboard and allow them to talk —
-that's the human analogue of the game's communication channel.
+player has acted. The player whose turn it is is boxed in the top bar, named in
+the chip at the top-left of the map, and the map is centred on them and framed
+in their colour. For a genuine coordination session, seat one human per player
+at the same keyboard and allow them to talk — that's the human analogue of the
+game's communication channel.
 
 Before the first episode, participants see the same `<game_rules>` briefing the
 LLM agents receive (also saved to `rules.txt` in the session directory), plus a
 keyboard reference. Skip the on-screen page with `--skip-rules` if you brief
 participants yourself instead.
 
+The window sizes itself to the largest block size that fits the screen (64 px
+blocks on a 1080p display, 128 px on a 4K one); force a size with `--size 64`
+or `--size 128`. Holding a key keeps acting, player after player, which is handy
+when one person hot-seats all three roles; pass `--no-key-repeat` when each seat
+has its own human, so a held key cannot spill into the next player's turn.
+
+## What's on screen
+
+![The human-play window: map on the left, status strip below it, team/request panel and full key reference on the right](images/human_interface.png)
+
+Every panel is drawn from the same game state the agents see; nothing on screen
+reveals information an LLM or RL agent would not get in its observation.
+
+**Top bar.** One chip per player in that player's sprite colour (the same colour
+as their character on the map) with their role; the current player is boxed and
+marked *YOUR MOVE*. On the right: the floor, the step count, and how many
+monsters have been killed on this floor out of the 8 that open the ladder down.
+
+**Map.** The 9×11 view centred on the current player, framed in their colour,
+with a chip naming them (or saying they are *ASLEEP* / *DOWNED*, in which case
+their turn is skipped automatically). Short flashes at the top of the map report
+rewards, damage and achievements as they happen. Borders on the map carry the
+coordination rules:
+
+| On the map | Meaning |
+| --- | --- |
+| Green border + number | Soft coordination: works alone, but that many players acting on it in the same step earn a bonus |
+| Cyan border + number | Hard coordination: nothing happens unless that many players act on it in the same step |
+| Orange dashed border | Handover: one player starts it, another must finish it within the window |
+| Red silhouette + gold tint on a creature | Elite creature that needs coordinated attacks (the *Facing* line says whether it is soft or hard) |
+| Number badge on a bordered block | How many players it needs |
+
+**Status strip (below the map)** — everything about *you*, the current player:
+
+- *YOU P1 · Warrior*, your score, XP and attribute levels, plus a tag if you are
+  asleep, resting, downed, or have a request open (with its countdown).
+- Stat bars with exact values: HP, food, drink, energy, mana. A value turns red
+  when it is critically low.
+- Inventory with names and counts: materials (wood … arrows) always shown, and a
+  second row for your pickaxe and sword tier, bow, armour pieces, book, learned
+  spell and any potions you hold. Empty slots are dimmed rather than hidden.
+- **Facing** line: what is on the tile in front of you and what it needs — the
+  coordination rule (soft / hard / handover, how many players, how many steps
+  are left on a handover someone started), the pickaxe tier a block needs,
+  whether a ladder is open or how many kills are still needed, and for a
+  creature whether it is an elite and the rule for attacking it. This is the
+  same information the text observation gives LLM agents.
+
+**Event log (bottom-left).** The last few rewards, damage events and achievement
+unlocks, so a player who was looking at the keyboard can catch up. Key hints sit
+to its right.
+
+**Sidebar — TEAM.** Each player with their colour, role, HP and status
+(*asleep* / *resting* / *DOWNED*), their position relative to you, and their
+open request (*wants DRINK · 7 steps left*). Next to a teammate's request is
+the **Give key that reaches them** from your seat, drawn white when pressing it
+would transfer a unit right now, otherwise faded with the reason it would not
+(*you have no drink*, *P3 is already full*, *you are asleep*).
+
+**Sidebar — ASK THE TEAM.** The nine request keys with the resource icon:
+`F1` Food, `F2` Drink, `F3` Wood, `F4` Stone, `F5` Iron, `F6` Coal, `F7` Diamond,
+`F8` Ruby, `F9` Sapphire. A request can be made at any time, teammates see it for
+10 steps, and your own open request is highlighted here with its countdown.
+
+**Sidebar — GIVE.** `Backspace` and `Delete`, each labelled with the teammate it
+reaches from your seat (P1: `Backspace`→P2, `Delete`→P3; P2: `Backspace`→P1,
+`Delete`→P3; P3: `Backspace`→P1, `Delete`→P2). Each press gives one unit of
+whatever that teammate requested; the key is white when it would work.
+
+**Sidebar — ACTIONS.** Every remaining key in two columns, grouped (move, act,
+place, pickaxe, sword, craft, fight, build, potions, magic, level up), with an
+icon of what it makes or uses. A key is drawn **white when that action would
+succeed this turn** (e.g. *Make Wood Pickaxe* next to a table with wood in
+hand) and fades into the background otherwise, so players can see both the
+key and whether it works without memorising recipes. Potion rows show how many of each
+colour you hold; the potion effects are shuffled per world, so test them when
+safe.
+
 ### Controls
 
 | Action | Key(s) |
 | --- | --- |
-| Move (N/W/S/E) | `W` `A` `S` `D` |
-| Do / interact | `Space` |
-| Sleep / Rest / Skip turn | `Tab` / `E` / `Q` |
-| Descend / Ascend | `.` / `,` |
-| Place stone/table/furnace/plant/torch | `R` `T` `F` `P` `J` |
-| Craft pickaxe (wood/stone/iron/diamond) | `1` `2` `3` `4` |
-| Craft sword (wood/stone/iron/diamond) | `5` `6` `7` `8` |
-| Craft armour (iron/diamond) | `Y` `U` |
-| Craft arrow / torch | `O` / `[` |
+| Move / turn to face (N/W/S/E) | `W` `A` `S` `D` |
+| Do / interact with the faced tile | `Space` |
+| Sleep (energy) / Rest (health) / Skip turn | `Tab` / `E` / `Q` |
+| Descend / Ascend a ladder (whole team moves) | `.` / `,` |
+| Place stone / table / furnace / sapling / torch | `R` `T` `F` `P` `J` |
+| Craft pickaxe (wood / stone / iron / diamond) | `1` `2` `3` `4` |
+| Craft sword (wood / stone / iron / diamond) | `5` `6` `7` `8` |
+| Craft iron armour / diamond armour | `Y` / `U` |
+| Craft arrows / torches | `O` / `[` |
 | Shoot arrow / cast spell | `I` / `G` |
-| Request a resource from the team | `F1`–`F9` |
-| Give held resource to a teammate | `Backspace` |
-| Build shelter/forge/beacon | `9` `0` `` ` `` |
+| Drink potion: red / green / blue / pink / cyan / yellow | `Z` `X` `C` `V` `B` `N` |
+| Read book / enchant sword / enchant armour / enchant bow | `M` `K` `L` `;` |
+| Level up dexterity / strength / intelligence (1 XP each) | `]` `-` `=` |
+| Ask the team for food / drink / wood / stone / iron / coal / diamond / ruby / sapphire | `F1` … `F9` |
+| Give 1 unit to the lower- / higher-numbered other player (needs their open request) | `Backspace` / `Delete` |
+| Build shelter / forge / beacon at a construction site | `9` `0` `` ` `` |
 | Start next episode | `Enter` |
 | Pause menu | `Esc` |
 
@@ -164,9 +254,14 @@ python examples/play_with_human_interface.py --export-csv outputs/play_with_huma
 
 Both read every `episodes.jsonl` under `--out` (default `outputs/play_with_human_interface/`)
 and need no JAX/pygame imports, so they're fast even over many sessions.
-`Team/achievement_pct` (and its coordination/normal/reward breakdowns) is the
-same headline metric reported for RL/LLM agents — see
-[`EVALUATION.md`](EVALUATION.md#headline-metric).
+
+The leaderboard columns are the reward-normalised team metrics — **Total%**
+`Team/reward_pct_of_max`, **Coord.%** `Team/coord_reward_pct_of_max`, **Base%**
+`Team/normal_reward_pct_of_max` — which the runner prints as the "eval metrics"
+line after every episode and session. `Team/achievement_pct` (and its
+coordination/normal variants) is the achievement-count view of the same run:
+report it alongside, but it is **not** the leaderboard number and differs from it
+by roughly a factor of two — see [`EVALUATION.md`](EVALUATION.md#headline-metric).
 
 Back up the whole `outputs/play_with_human_interface/` directory (or each session directory)
 after every session visit — it's the only copy of the raw data.
@@ -175,7 +270,8 @@ after every session visit — it's the only copy of the raw data.
 
 `examples/replay_play_with_human_interface.py` plays back a saved episode from its
 `*_states.pkl.gz` file — for spot-checking that nothing was corrupted by a
-save/reload, or producing a clip for a talk:
+save/reload, or producing a clip for a talk. It uses the same window as live
+play, so a replay shows every panel a participant saw:
 
 ```bash
 # Interactively view episode 0 of a session (space=play/pause, arrows=step/speed, P=player, Q/Esc=quit):
@@ -190,11 +286,12 @@ python examples/replay_play_with_human_interface.py <session_dir> --episode 0 --
 1. Approved consent text ready (replace the placeholder — see above).
 2. Confirm `--coord`, `--episodes`, and `--players` match your protocol before
    the first participant, not after.
-3. Run `--practice` first so the team learns the controls before anything is
+3. Put a printed `examples/participant_handout.pdf` next to the keyboard.
+4. Run `--practice` first so the team learns the controls before anything is
    scored.
-4. Mention Esc is the pause menu, not an abort — the old play-testing habit of
+5. Mention Esc is the pause menu, not an abort — the old play-testing habit of
    mashing Esc to quit will otherwise save/reload data unexpectedly.
-5. After the session, spot check with `replay_play_with_human_interface.py`, then back up the
+6. After the session, spot check with `replay_play_with_human_interface.py`, then back up the
    output directory.
-6. Once all visits are done: `--aggregate` for a quick look, `--export-csv` for
+7. Once all visits are done: `--aggregate` for a quick look, `--export-csv` for
    stats software.
