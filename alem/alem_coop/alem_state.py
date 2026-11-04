@@ -405,7 +405,7 @@ class EnvParams:
     # Base difficulty scaling (non-coordination game difficulty)
     # When True, α scales mob health and starting resources.
     # mob_damage is NOT scaled — higher damage teaches mob avoidance, undermining combat coordination.
-    scale_base_difficulty: bool = False
+    scale_base_difficulty: bool = True
     mob_health_multiplier: float = 1.0  # multiplied into mob HP at spawn (β=1/3)
     starting_resource_multiplier: float = (
         1.0  # scales starting food/drink/energy (β=1/3; not health — it rests back)

@@ -2,14 +2,11 @@
 
 import base64
 import csv
-import gzip
 import io
 import json
 import logging
 import os
-import pickle
 import random
-import re
 import sys
 import threading
 import traceback
@@ -31,6 +28,8 @@ for _p in (_llm_root, _project_root, _alem_root):
 import imageio
 from omegaconf import OmegaConf
 from tqdm import tqdm
+
+from alem.trajectory_io import safe_json_dumps, save_state_bundle, save_trajectory_npz
 
 try:
     from .agents.few_shot import FewShotAgent
@@ -57,36 +56,9 @@ _MAX_CONSECUTIVE_LENGTH_INCOMPLETES = 3
 _PAID_API_CLIENT_MARKERS = ("openai", "anthropic", "claude", "gemini")
 _PAID_API_MODEL_MARKERS = ("gpt-", "claude", "gemini")
 
-# Surrogate characters (U+D800–U+DFFF) and null bytes are not valid in JSON
-# strings. LLM thinking output occasionally contains them, causing json.loads
-# to fail when reading the JSONL back. Strip them before serializing.
-_INVALID_JSON_STR = re.compile(r"[\x00\ud800-\udfff]", re.UNICODE)
-
-
-def _sanitize_str(s):
-    """Remove characters that are invalid in JSON strings."""
-    if isinstance(s, str):
-        return _INVALID_JSON_STR.sub("\ufffd", s)
-    return s
-
-
-def _sanitize_record(obj):
-    """Recursively sanitize all string values in a dict/list for JSON safety."""
-    if isinstance(obj, dict):
-        return {k: _sanitize_record(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_sanitize_record(v) for v in obj]
-    if isinstance(obj, str):
-        return _sanitize_str(obj)
-    return obj
-
-
-def _safe_json_dumps(obj):
-    """json.dumps with sanitization fallback for invalid string content."""
-    try:
-        return json.dumps(obj)
-    except (ValueError, UnicodeEncodeError):
-        return json.dumps(_sanitize_record(obj))
+# JSON-safety helpers live in alem.trajectory_io (shared with play_with_human_interface.py);
+# aliased here since this file has several call sites.
+_safe_json_dumps = safe_json_dumps
 
 
 def _classify_incomplete_response(response):
@@ -142,37 +114,20 @@ def _save_episode_trajectory(
 ):
     """Save per-episode trajectory as .npz matching the RL eval format (baselines/utils.py).
 
-    Numeric arrays match RL _run_eval_sequential exactly:
-      obs       (T, num_agents, obs_dim) - raw symbolic obs (pre-step)
-      actions   (T, num_agents)          - discrete action indices
-      rewards   (T, num_agents)          - per-agent rewards
-      dones     (T,)                     - episode-done flag
-      timesteps (T,)                     - step indices
-
-    Extra LLM-specific fields (load with allow_pickle=True):
-      text_obs     (T, num_agents) - long-term text observation seen by the agent
-      text_actions (T, num_agents) - canonical action name chosen by the agent
+    Thin wrapper around alem.trajectory_io.save_trajectory_npz that resolves
+    the eval-harness directory layout (output_dir/env_name/task/...).
     """
-    T = len(traj_obs)
-    if T == 0 or any(x is None for x in traj_obs):
-        return
-    try:
-        traj_dir = os.path.join(output_dir, env_name, task)
-        Path(traj_dir).mkdir(exist_ok=True, parents=True)
-        save_path = os.path.join(traj_dir, f"{task}_run_{episode_idx:02d}_trajectory.npz")
-        np.savez_compressed(
-            save_path,
-            obs=np.stack(traj_obs),  # (T, num_agents, obs_dim)
-            actions=np.stack(traj_actions),  # (T, num_agents)
-            rewards=np.stack(traj_rewards),  # (T, num_agents)
-            dones=np.array(traj_dones, dtype=bool),  # (T,)
-            timesteps=np.arange(T, dtype=np.int32),  # (T,)
-            text_obs=np.array(traj_text_obs, dtype=object),  # (T, num_agents)
-            text_actions=np.array(traj_text_actions, dtype=object),  # (T, num_agents)
-        )
-        logger.info(f"Saved trajectory ({T} steps) to {save_path}")
-    except Exception as e:
-        logger.warning(f"Failed to save trajectory for episode {episode_idx}: {e}")
+    traj_dir = os.path.join(output_dir, env_name, task)
+    save_path = os.path.join(traj_dir, f"{task}_run_{episode_idx:02d}_trajectory.npz")
+    save_trajectory_npz(
+        save_path,
+        obs=traj_obs,
+        actions=traj_actions,
+        rewards=traj_rewards,
+        dones=traj_dones,
+        text_obs=traj_text_obs,
+        text_actions=traj_text_actions,
+    )
 
 
 def _save_episode_states(
@@ -185,27 +140,12 @@ def _save_episode_states(
 ):
     """Save pre-step env states to a separate compressed pickle for exact replay.
 
-    We keep this out of the main `.npz` because EnvState is a nested flax/JAX
-    pytree, not a plain numeric array. The replay script can prefer this file
-    whenever it exists, which avoids seed-based reconstruction entirely.
+    Thin wrapper around alem.trajectory_io.save_state_bundle that resolves the
+    eval-harness directory layout (output_dir/env_name/task/...).
     """
-    if not traj_states:
-        return
-
-    try:
-        traj_dir = os.path.join(output_dir, env_name, task)
-        Path(traj_dir).mkdir(exist_ok=True, parents=True)
-        save_path = os.path.join(traj_dir, f"{task}_run_{episode_idx:02d}_states.pkl.gz")
-        payload = {
-            "states": traj_states,
-            "static_env_params": static_env_params,
-            "num_steps": len(traj_states),
-        }
-        with gzip.open(save_path, "wb") as handle:
-            pickle.dump(payload, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        logger.info(f"Saved state bundle ({len(traj_states)} steps) to {save_path}")
-    except Exception as e:
-        logger.warning(f"Failed to save states for episode {episode_idx}: {e}")
+    traj_dir = os.path.join(output_dir, env_name, task)
+    save_path = os.path.join(traj_dir, f"{task}_run_{episode_idx:02d}_states.pkl.gz")
+    save_state_bundle(save_path, traj_states, static_env_params)
 
 
 class EvaluatorManager:
