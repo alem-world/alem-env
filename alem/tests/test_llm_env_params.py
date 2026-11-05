@@ -18,7 +18,9 @@ class TestLLMEnvSpecialisationParams(unittest.TestCase):
             env = make_alem_env({"coordination_difficulty": difficulty, "num_agents": 3})
             expected = get_coordination_params(difficulty)["non_specialist_efficiency"]
             self.assertAlmostEqual(
-                float(env.default_params.non_specialist_efficiency), float(expected), places=4,
+                float(env.default_params.non_specialist_efficiency),
+                float(expected),
+                places=4,
                 msg=f"{difficulty}: LLM env must use the preset value RL eval uses",
             )
             self.assertTrue(bool(env.default_params.soft_specialization))
