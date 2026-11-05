@@ -648,7 +648,7 @@ def single_run(config):
 
     # Build coordination params from TRAINING_COORDINATION_DIFFICULTY
     train_coord_diff = config.get("TRAINING_COORDINATION_DIFFICULTY", "none")
-    scale_base = config.get("SCALE_BASE_DIFFICULTY", False)
+    scale_base = config.get("SCALE_BASE_DIFFICULTY", True)
     if train_coord_diff == "sampled":
         # Domain randomisation: α ~ U[ALPHA_MIN, ALPHA_MAX] each episode.
         # Use full opportunity params as structural base so coordination is enabled.

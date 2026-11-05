@@ -17,7 +17,7 @@ SOFT_SPECIALIZATION: true
 SPECIALIST_EFFICIENCY: 1.0      # Success rate for specialists (100%)
 # non specialist efficiency is sampled when TRAINING_COORDINATION_DIFFICULTY=sampled
 NON_SPECIALIST_EFFICIENCY: 0.2  # Success rate for non-specialists (20%)
-SCALE_BASE_DIFFICULTY: false  # whether to scale base difficulty with α (see alem_coop/alem_state.py for details)
+SCALE_BASE_DIFFICULTY: true  # whether to scale base difficulty with α (see alem_coop/alem_state.py for details)
 
 TRAINING_COORDINATION_DIFFICULTY: easy
 
