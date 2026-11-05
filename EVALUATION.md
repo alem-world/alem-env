@@ -12,6 +12,7 @@ track. Use these settings unless your paper explicitly states a deviation.
 | Environment | `Alem-Coop-Symbolic` | `ENV_NAME` |
 | Agents | 3 | `alem.num_agents` |
 | Soft specialisation | on | `alem.soft_specialization` |
+| Non-specialist efficiency | from the difficulty preset: 1 − α = 0.70 / 0.40 / 0.10 | set by `coordination_difficulty`; leave `alem.non_specialist_efficiency` as `null` |
 | Shared reward | off | `alem.shared_reward` |
 | Episodes | 20 per difficulty | `eval.num_episodes.alem` (LLM) / `TEST_NUM_EPISODES` (RL) |
 | Max steps / episode | 10000 | `eval.max_steps_per_episode` / `TEST_MAX_STEPS` |

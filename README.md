@@ -26,6 +26,13 @@
 
 <p align="center"><sub><b>93</b> achievements&nbsp;·&nbsp;<b>27</b> coordination goals&nbsp;·&nbsp;<b>3</b> difficulty tiers&nbsp;·&nbsp;<b>9</b> dungeon levels&nbsp;·&nbsp;episodes up to <b>10,000</b> steps&nbsp;·&nbsp;pure JAX</sub></p>
 
+## News
+
+- **Nov 2026 - Accepted at NeurIPS 2026**, Evaluations and Datasets Track. 🎉 
+- **Nov 2026 - Human-play interface**: play Alem yourself under the same protocol the agents are scored on (pixel observations vs text for LLMs). See [Human Play](#human-play). 🎉 
+- **Sep 2026 - New entries on the [leaderboard](https://alem-world.github.io/leaderboard.html)**: GPT-6 Astra, Nemotron 3 Super 120B-A12B, MiniMax M2.7, Laguna S 2.1, Qwen 3.8 Flash-Next, GLM 5.3 Flash, and a 10B-step MARL baseline and human baselines. 🎉 
+- **Aug 2026 - Oral at the [RLVG 2026 workshop](https://sites.google.com/view/rlvg-2026/home)** (Reinforcement Learning and Video Games) at RLC 2026. 🎉 
+
 ## Contents
 
 [RL Playing](#rl-agents-playing) · [LLM Playing](#llm-agents-playing) · [Install](#install) · [Quick Start](#quick-start) · [**Evaluate an LLM**](#evaluate-an-llm) · [Configure](#configure) · [RL Agents](#rl-agents) · [Baselines](#baselines) · [Human Play](#human-play) · [Docker](#docker) · [Package Layout](#package-layout) · [Development](#development) · [RL vs LLM Interfaces](#rl-vs-llm-interfaces) · [Reproduce the Paper](#reproduce-the-paper) · [Submit to the Leaderboard](#submit-to-the-leaderboard) · [Errata](#errata) · [Contributing](#contributing) · [Citation](#citation) · [License](#license)
@@ -518,6 +525,8 @@ Fixes that change environment behaviour are listed here, so numbers produced on 
 
 - **Prior to v0.2.0 - ladder placement.** The up-ladder and down-ladder positions were drawn independently and never checked against each other, so they could share a row and the up-ladders would replace some of the down-ladders. Affected levels could have fewer ways down than intended. This should be a minor issue for most runs, but it does change generated worlds, so results from before and after the fix are not directly comparable.
 
+- **Prior to v0.2.2 - non-specialist efficiency in LLM eval.** The LLM evaluation config set `non_specialist_efficiency` to 0.20 for every coordination difficulty and applied it after the difficulty preset (1 − α: 0.70 easy, 0.40 medium, 0.10 hard), which RL eval uses. The preset now overwrites the config value, so LLM runs use it like RL runs. This changes how often non-specialist actions succeed, so LLM results from before and after the fix are not directly comparable, and LLM and RL results at the same difficulty were produced under different settings before v0.2.2.
+
 - **Prior to v0.2.1 - lava bridging.** Stone can now be placed into lava and mined into a walkable path, restoring Craftax's Fire Realm bridging mechanic without changing generated maps. This changes episode behaviour, but no agents have reached the Fire Realm yet, so it doesn't affect scores. 
 
 ## Contributing
@@ -527,14 +536,15 @@ Contributions are welcome: new baselines, bug fixes, docs, and coordination task
 ## Citation
 
 ```bibtex
-@article{tessera2026alem,
-  title   = {Benchmarking Open-Ended Multi-Agent Coordination in Language Agents},
-  author  = {Tessera, {Kale-ab} Abebe and Szecsenyi, Andras and Barker, Cameron and
-             Rutherford, Alexander and Paglieri, Davide and Scannell, Aidan and
-             Gouk, Henry and Crowley, Elliot J. and Rockt\"{a}schel, Tim and
-             Storkey, Amos},
-  year    = {2026},
-  url     = {https://arxiv.org/abs/2606.08340}
+@inproceedings{tessera2026alem,
+  title     = {Benchmarking Open-Ended Multi-Agent Coordination in Language Agents},
+  author    = {Tessera, {Kale-ab} Abebe and Szecsenyi, Andras and Barker, Cameron and
+               Rutherford, Alexander and Paglieri, Davide and Scannell, Aidan and
+               Gouk, Henry and Crowley, Elliot J. and Rockt\"{a}schel, Tim and
+               Storkey, Amos},
+  booktitle={The Fortieth Annual Conference on Neural Information Processing Systems Evaluations and Datasets Track},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2606.08340}
 }
 ```
 

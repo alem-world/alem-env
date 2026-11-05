@@ -22,7 +22,7 @@ authors:
     given-names: Tim
   - family-names: Storkey
     given-names: Amos
-version: 0.2.1
+version: 0.2.2
 date-released: 2026-06-17
 license: MIT
 repository-code: "https://github.com/alem-world/alem-env"
@@ -34,8 +34,11 @@ keywords:
   - llm-agents
   - benchmark
 preferred-citation:
-  type: article
+  type: conference-paper
   title: "Benchmarking Open-Ended Multi-Agent Coordination in Language Agents"
+  collection-title: "The Fortieth Annual Conference on Neural Information Processing Systems Evaluations and Datasets Track"
+  conference:
+    name: "The Fortieth Annual Conference on Neural Information Processing Systems Evaluations and Datasets Track"
   authors:
     - family-names: Tessera
       given-names: Kale-ab Abebe

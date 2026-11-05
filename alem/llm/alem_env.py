@@ -62,7 +62,9 @@ class CraftaxEnv:
             "soft_specialization": alem_config.get("soft_specialization", True),
             "shared_reward": alem_config.get("shared_reward", False),
             "specialist_efficiency": alem_config.get("specialist_efficiency", 1.0),
-            "non_specialist_efficiency": alem_config.get("non_specialist_efficiency", 0.2),
+            # None = difficulty preset (1 - alpha); a number only applies when
+            # coordination_difficulty is "none". See make_alem_env.
+            "non_specialist_efficiency": alem_config.get("non_specialist_efficiency"),
             "randomize_alpha": alem_config.get("randomize_alpha", False),
             "num_agents": self.num_agents,
             "ENV_NAME": env_name,
