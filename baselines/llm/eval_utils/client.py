@@ -28,6 +28,11 @@ try:
 except ImportError:
     OpenAI = None
 
+try:
+    from omegaconf import OmegaConf
+except ImportError:
+    OmegaConf = None
+
 
 LLMResponse = namedtuple(
     "LLMResponse",
@@ -518,6 +523,16 @@ class OpenAIWrapper(LLMClientWrapper):
             reasoning_effort = self.client_kwargs.get("reasoning_effort")
             if reasoning_effort is not None and client_name == "openai":
                 api_kwargs["reasoning_effort"] = reasoning_effort
+            # Structured decoding. client_kwargs is read key-by-key, so an option
+            # that isn't copied here is dropped while the run still reports as
+            # configured — the model generates unconstrained and nothing says so.
+            response_format = self.client_kwargs.get("response_format")
+            if response_format is not None:
+                # Config values arrive as DictConfig, which the SDK's JSON encoder
+                # rejects — and it surfaces as an API error, not a config error.
+                if OmegaConf is not None and OmegaConf.is_config(response_format):
+                    response_format = OmegaConf.to_container(response_format, resolve=True)
+                api_kwargs["response_format"] = response_format
             # Pass enable_thinking to vLLM when a --reasoning-parser is active.
             # Only for vLLM — the real OpenAI API doesn't support extra_body.
             if client_name == "vllm":
