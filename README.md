@@ -527,7 +527,7 @@ Fixes that change environment behaviour are listed here, so numbers produced on 
 
 - **Prior to v0.2.1 - lava bridging.** Stone can now be placed into lava and mined into a walkable path, restoring Craftax's Fire Realm bridging mechanic without changing generated maps. This changes episode behaviour, but no agents have reached the Fire Realm yet, so it doesn't affect scores.
 
-- **Prior to v0.2.2 - non-specialist efficiency in LLM eval.** The LLM evaluation config set `non_specialist_efficiency` to 0.20 for every coordination difficulty and applied it after the difficulty preset (1 − α: 0.70 easy, 0.40 medium, 0.10 hard), which RL eval uses. The preset now overwrites the config value, so LLM runs use it like RL runs. This changes how often non-specialist actions succeed, so LLM results from before and after the fix are not directly comparable, and LLM and RL results at the same difficulty were produced under different settings before v0.2.2.
+- **Prior to v0.2.2 - non-specialist efficiency in LLM eval.** The LLM evaluation config used a fixed `non_specialist_efficiency` of 0.20 at every coordination difficulty, while RL eval takes it from the difficulty preset (1 − α: 0.70 easy, 0.40 medium, 0.10 hard). LLM runs now use the preset as well. This affects how often non-specialist actions succeed, so LLM results from before v0.2.2 may differ somewhat from later ones, keep the version in mind when comparing them.
 
 ## Contributing
 
