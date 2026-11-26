@@ -82,4 +82,5 @@ jobs:
             baselines.llm.test_ascii_map \
             baselines.llm.test_language_wrapper \
             baselines.llm.test_prompt_builder \
+            baselines.llm.test_constrained \
             -v
